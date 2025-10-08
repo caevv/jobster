@@ -1,3 +1,10 @@
+# 1.0.0 (2025-10-08)
+
+
+### Features
+
+* initial commit ([3436aa8](https://github.com/caevv/jobster/commit/3436aa80f32beffc8950842981303a451313c51d))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
