@@ -4,7 +4,6 @@
 
 Schedule recurring tasks, get notified when they succeed or fail, and monitor everything from a web dashboard.
 
-[![CI](https://github.com/caevv/jobster/actions/workflows/ci.yml/badge.svg)](https://github.com/caevv/jobster/actions/workflows/ci.yml)
 [![Release](https://github.com/caevv/jobster/actions/workflows/release.yml/badge.svg)](https://github.com/caevv/jobster/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
