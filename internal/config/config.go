@@ -1,8 +1,14 @@
 package config
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Config represents the top-level configuration structure for Jobster.
 type Config struct {
 	Defaults Defaults `yaml:"defaults"`
+	Logging  Logging  `yaml:"logging"`
 	Store    Store    `yaml:"store"`
 	Security Security `yaml:"security"`
 	Jobs     []Job    `yaml:"jobs"`
@@ -15,6 +21,13 @@ type Defaults struct {
 	FailOnAgentError   bool   `yaml:"fail_on_agent_error"`
 	JobRetries         int    `yaml:"job_retries"`          // optional: default 0
 	JobBackoffStrategy string `yaml:"job_backoff_strategy"` // optional: "linear" or "exponential"
+}
+
+// Logging configuration for log output.
+type Logging struct {
+	Level  string `yaml:"level"`  // "debug", "info", "warn", "error" (default: "info")
+	Format string `yaml:"format"` // "json" or "text" (default: "json")
+	Output string `yaml:"output"` // file path or "stderr" (default: "stderr")
 }
 
 // Store configuration for run history persistence.
@@ -32,7 +45,7 @@ type Security struct {
 type Job struct {
 	ID         string            `yaml:"id"`          // unique job identifier
 	Schedule   string            `yaml:"schedule"`    // cron expression or human-readable interval
-	Command    string            `yaml:"command"`     // command to execute
+	Command    CommandSpec       `yaml:"command"`     // command to execute (string or array)
 	Workdir    string            `yaml:"workdir"`     // working directory for the command
 	TimeoutSec int               `yaml:"timeout_sec"` // job execution timeout
 	Env        map[string]string `yaml:"env"`         // environment variables
@@ -51,4 +64,52 @@ type Hooks struct {
 type Agent struct {
 	Agent string         `yaml:"agent"` // agent name (executable name)
 	With  map[string]any `yaml:"with"`  // configuration passed to the agent
+}
+
+// CommandSpec represents a command that can be specified as either:
+// - A string: "echo hello"
+// - An array: ["/bin/echo", "hello"]
+type CommandSpec struct {
+	value string
+}
+
+// String returns the command as a string for execution.
+func (c CommandSpec) String() string {
+	return c.value
+}
+
+// Set sets the command value from a string.
+func (c *CommandSpec) Set(value string) {
+	c.value = value
+}
+
+// NewCommandSpec creates a new CommandSpec from a string.
+func NewCommandSpec(value string) CommandSpec {
+	return CommandSpec{value: value}
+}
+
+// UnmarshalYAML implements custom unmarshaling to support both string and array formats.
+func (c *CommandSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Try to unmarshal as a string first
+	var strValue string
+	if err := unmarshal(&strValue); err == nil {
+		c.value = strValue
+		return nil
+	}
+
+	// Try to unmarshal as an array
+	var arrValue []string
+	if err := unmarshal(&arrValue); err == nil {
+		// Join array elements with spaces for execution
+		// First element is the command, rest are arguments
+		c.value = strings.Join(arrValue, " ")
+		return nil
+	}
+
+	return fmt.Errorf("command must be a string or array of strings")
+}
+
+// MarshalYAML implements custom marshaling.
+func (c CommandSpec) MarshalYAML() (interface{}, error) {
+	return c.value, nil
 }

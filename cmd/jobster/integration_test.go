@@ -32,7 +32,7 @@ func TestIntegration_JobExecution(t *testing.T) {
 			{
 				ID:         "test-job",
 				Schedule:   "@every 1s",
-				Command:    "echo 'hello world'",
+				Command: config.NewCommandSpec("/bin/echo hello world"),
 				TimeoutSec: 5,
 			},
 		},
@@ -116,7 +116,7 @@ func TestIntegration_FailingJob(t *testing.T) {
 			{
 				ID:         "failing-job",
 				Schedule:   "@every 1s",
-				Command:    "exit 1",
+				Command: config.NewCommandSpec("/bin/false"),
 				TimeoutSec: 5,
 			},
 		},
@@ -191,19 +191,19 @@ func TestIntegration_MultipleJobs(t *testing.T) {
 			{
 				ID:         "job-1",
 				Schedule:   "@every 1s",
-				Command:    "echo 'job 1'",
+				Command: config.NewCommandSpec("/bin/echo job-1"),
 				TimeoutSec: 5,
 			},
 			{
 				ID:         "job-2",
 				Schedule:   "@every 1s",
-				Command:    "echo 'job 2'",
+				Command: config.NewCommandSpec("/bin/echo job-2"),
 				TimeoutSec: 5,
 			},
 			{
 				ID:         "job-3",
 				Schedule:   "@every 1s",
-				Command:    "echo 'job 3'",
+				Command: config.NewCommandSpec("/bin/echo job-3"),
 				TimeoutSec: 5,
 			},
 		},
@@ -301,7 +301,7 @@ exit 0
 			{
 				ID:         "hook-job",
 				Schedule:   "@every 1s",
-				Command:    "echo 'test'",
+				Command: config.NewCommandSpec("/bin/echo test"),
 				TimeoutSec: 5,
 				Hooks: config.Hooks{
 					PreRun: []config.Agent{
@@ -390,7 +390,7 @@ func TestIntegration_GracefulShutdown(t *testing.T) {
 			{
 				ID:         "long-job",
 				Schedule:   "@every 1s",
-				Command:    "sleep 0.2",
+				Command: config.NewCommandSpec("/bin/sleep 0.2"),
 				TimeoutSec: 5,
 			},
 		},
@@ -460,7 +460,7 @@ func TestIntegration_JobWithEnvironment(t *testing.T) {
 			{
 				ID:         "env-job",
 				Schedule:   "@every 1s",
-				Command:    "printenv TEST_VAR",
+				Command: config.NewCommandSpec("/usr/bin/printenv TEST_VAR"),
 				TimeoutSec: 5,
 				Env: map[string]string{
 					"TEST_VAR": "test_value",
