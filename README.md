@@ -1,384 +1,315 @@
 # Jobster
 
-A lightweight, plugin-based cron job runner written in Go. Define jobs in YAML, run with minimal setup, and extend via simple plugins.
+**A simple, reliable cron job scheduler with notifications and monitoring.**
+
+Schedule recurring tasks, get notified when they succeed or fail, and monitor everything from a web dashboard.
 
 [![CI](https://github.com/caevv/jobster/actions/workflows/ci.yml/badge.svg)](https://github.com/caevv/jobster/actions/workflows/ci.yml)
 [![Release](https://github.com/caevv/jobster/actions/workflows/release.yml/badge.svg)](https://github.com/caevv/jobster/actions/workflows/release.yml)
-[![Go Version](https://img.shields.io/badge/go-1.25-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-## Features
+## Why Jobster?
 
-- **YAML-based job definitions** - Simple, declarative configuration
-- **Cron expression support** - Standard cron syntax plus human-readable intervals (`@every 5m`)
-- **Pluggable hooks** - Execute scripts at `pre_run`, `post_run`, `on_success`, and `on_error` stages
-- **Execution history tracking** - Track job runs with success/failure status and logs
-- **Optional web dashboard** - Monitor jobs and view history via HTTP interface
-- **Plugin system** - Extend with Bash, Python, Node.js, or Go scripts
-- **One-binary CLI** - Single executable with `run` and `serve` modes
-- **Graceful shutdown** - Proper signal handling and job cancellation
-- **Multiple storage backends** - BoltDB (production) or JSON (development)
+**Simple alternative to complex schedulers** - If you find traditional cron too basic but Kubernetes CronJobs too heavy, Jobster is the middle ground.
+
+**Built-in notifications** - Get Slack/email alerts when jobs fail, without writing wrapper scripts.
+
+**Job history and logs** - See when jobs ran, how long they took, and what went wrong.
+
+**Easy monitoring** - Optional web dashboard.
+
+**Portable** - Single binary, runs anywhere Linux runs. No containers required.
+
+### When to use Jobster
+
+✅ **Database backups** - Schedule nightly backups with Slack notifications  
+✅ **Health checks** - Monitor APIs every 5 minutes, alert on failures  
+✅ **Report generation** - Generate daily/weekly reports automatically  
+✅ **Data synchronization** - Sync data between systems on schedule  
+✅ **Cleanup tasks** - Delete old files, clear caches, rotate logs  
+✅ **DevOps automation** - Deployment checks, certificate renewals
 
 ## Quick Start
 
 ### Installation
 
+**Download pre-built binary** (Recommended):
+
 ```bash
-# Clone the repository
+# Download latest release
+curl -LO https://github.com/caevv/jobster/releases/latest/download/jobster-linux-amd64
+chmod +x jobster-linux-amd64
+sudo mv jobster-linux-amd64 /usr/local/bin/jobster
+
+# Verify
+jobster --version
+```
+
+**Or build from source** (see [CONTRIBUTING.md](CONTRIBUTING.md) for details):
+
+```bash
 git clone https://github.com/caevv/jobster
 cd jobster
-
-# Build the binary
 go build -o jobster ./cmd/jobster
-
-# Verify installation
-./jobster --version
 ```
 
-### Run a Simple Job
+### Your First Job
 
-**Option 1: Using CLI Commands (Easiest)**
+Create a simple backup job:
 
 ```bash
-# Add a job (automatically creates jobster.yaml)
-./jobster job add hello-world \
-  --schedule "@every 1m" \
-  --command "echo 'Hello from Jobster!'" \
-  --timeout 30
+# Add job using CLI
+jobster job add nightly-backup \
+  --schedule "@daily" \
+  --command "/usr/local/bin/backup.sh"
 
-# List jobs
-./jobster job list
+# List configured jobs
+jobster job list
 
-# Run the scheduler
-./jobster run --config jobster.yaml
+# Run the scheduler (stays running)
+jobster run --config jobster.yaml
 ```
 
-**Option 2: Manual YAML Configuration**
+That's it! Your job will run every day at midnight.
 
-Create a `jobster.yaml` file:
+### Production Deployment
 
-```yaml
-defaults:
-  timezone: "UTC"
-
-store:
-  driver: "json"
-  path: "./.jobster.json"
-
-jobs:
-  - id: "hello-world"
-    schedule: "@every 1m"
-    command: "echo 'Hello from Jobster!'"
-    timeout_sec: 30
-```
-
-Run the scheduler:
+For production use, deploy Jobster as a systemd service:
 
 ```bash
-./jobster run --config jobster.yaml
-```
-
-### With Web Dashboard
-
-```bash
-./jobster serve --config jobster.yaml --addr :8080
-```
-
-Visit http://localhost:8080 to view the dashboard.
-
-## Configuration
-
-### Basic Structure
-
-```yaml
-defaults:
-  timezone: "America/New_York"       # Timezone for schedules (defaults to system timezone if omitted)
-  agent_timeout_sec: 10              # Timeout for hook scripts
-  fail_on_agent_error: false         # Fail job if hook fails
-  job_retries: 3                     # Number of retries on failure
-  job_backoff_strategy: "exponential" # "linear" or "exponential"
-
-store:
-  driver: "bbolt"                    # "bbolt" or "json"
-  path: "./.jobster.db"              # Database file path
-
-security:
-  allowed_agents:                    # Optional agent allow-list
-    - "send-slack.sh"
-    - "http-webhook.js"
-
-jobs:
-  - id: "unique-job-id"
-    schedule: "0 2 * * *"            # Cron expression
-    command: "/path/to/command"      # Command to execute
-    workdir: "/optional/workdir"     # Working directory
-    timeout_sec: 600                 # Job timeout
-    env:                             # Environment variables
-      KEY: "value"
-    hooks:
-      pre_run:                       # Before job starts
-        - agent: "notify.sh"
-          with: { message: "Starting..." }
-      post_run:                      # After job finishes (always)
-        - agent: "log-metrics.py"
-          with: { type: "execution" }
-      on_success:                    # Only on success
-        - agent: "send-slack.sh"
-          with: { channel: "#ops", message: "Success!" }
-      on_error:                      # Only on failure
-        - agent: "send-alert.sh"
-          with: { severity: "high" }
-```
-
-### Schedule Formats
-
-Jobster supports multiple schedule formats:
-
-| Format | Example | Description |
-|--------|---------|-------------|
-| **Cron** | `0 2 * * *` | Daily at 2:00 AM |
-| **Cron** | `*/15 * * * *` | Every 15 minutes |
-| **Descriptor** | `@hourly` | Every hour at :00 |
-| **Descriptor** | `@daily` | Daily at midnight |
-| **Descriptor** | `@weekly` | Sunday at midnight |
-| **Descriptor** | `@monthly` | 1st of month at midnight |
-| **Interval** | `@every 5m` | Every 5 minutes |
-| **Interval** | `@every 2h` | Every 2 hours |
-| **Interval** | `@every 30s` | Every 30 seconds |
-
-See [examples/README.md](examples/README.md) for more configuration examples.
-
-## Plugins (Agents)
-
-Agents are executable scripts that run at specific hook points. They can be written in any language.
-
-### Creating an Agent
-
-**Example:** `agents/send-slack.sh`
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Read config from environment
-config="${CONFIG_JSON:-{}}"
-channel="$(jq -r '.channel // "#ops"' <<<"$config")"
-message="$(jq -r '.message // "Job finished"' <<<"$config")"
-
-# Access job metadata
-job_id="${JOB_ID}"
-run_id="${RUN_ID}"
-hook="${HOOK}"
-
-# Do work
-curl -X POST "${SLACK_WEBHOOK_URL}" \
-  -H 'Content-Type: application/json' \
-  -d "{\"channel\":\"$channel\",\"text\":\"$message (job=$job_id)\"}"
-
-# Return JSON output (optional)
-echo '{"status":"ok","metrics":{"notified":1}}'
-```
-
-Make it executable:
-
-```bash
-chmod +x agents/send-slack.sh
-```
-
-### Agent Environment Variables
-
-Agents receive these environment variables:
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `JOB_ID` | Job identifier | `"nightly-backup"` |
-| `JOB_COMMAND` | Command being executed | `"/usr/bin/backup"` |
-| `JOB_SCHEDULE` | Schedule expression | `"0 2 * * *"` |
-| `HOOK` | Hook type | `"on_success"` |
-| `RUN_ID` | Unique run UUID | `"550e8400-..."` |
-| `ATTEMPT` | Retry attempt number | `"1"` |
-| `START_TS` | Start timestamp | `"2025-10-08T01:00:00Z"` |
-| `END_TS` | End timestamp | `"2025-10-08T01:05:00Z"` |
-| `EXIT_CODE` | Job exit code | `"0"` |
-| `CONFIG_JSON` | Hook config as JSON | `{"channel":"#ops"}` |
-| `STATE_DIR` | Writable state directory | `~/.jobster/state/job-id/` |
-
-See [examples/agents/](agents/) for more examples.
-
-## Commands
-
-### `jobster run`
-
-Run the scheduler in headless mode (no dashboard).
-
-```bash
-./jobster run --config jobster.yaml [--debug]
-```
-
-### `jobster serve`
-
-Run the scheduler with an HTTP dashboard.
-
-```bash
-./jobster serve --config jobster.yaml --addr :8080 [--debug]
-```
-
-Dashboard endpoints:
-- `GET /` - Main dashboard UI
-- `GET /api/jobs` - List all jobs (JSON)
-- `GET /api/runs` - Recent runs (JSON)
-- `GET /api/stats` - Statistics (JSON)
-- `GET /health` - Health check
-
-### `jobster validate`
-
-Validate a configuration file without running it.
-
-```bash
-./jobster validate --config jobster.yaml
-```
-
-### `jobster job` - Job Management
-
-Manage jobs directly from the command line, automatically creating/updating the YAML configuration.
-
-#### `jobster job add` - Add New Job
-
-Add a new cron job to the configuration:
-
-```bash
-# Simple job
-jobster job add backup --schedule "@daily" --command "/usr/bin/backup.sh"
-
-# With options
-jobster job add api-check \
-  --schedule "*/5 * * * *" \
-  --command "curl http://api/health" \
-  --timeout 30 \
-  --env "API_KEY=secret" \
-  --env "TIMEOUT=10"
-
-# Interactive mode
-jobster job add --interactive
-```
-
-**Flags:**
-- `--schedule` - Cron expression or @-notation (required)
-- `--command` - Command to execute (required)
-- `--config` - Config file path (default: `jobster.yaml`)
-- `--workdir` - Working directory
-- `--timeout` - Timeout in seconds (default: 600)
-- `--env` - Environment variables (repeatable: `--env KEY=VALUE`)
-- `--interactive, -i` - Interactive mode with prompts
-
-#### `jobster job list` - List Jobs
-
-List all configured jobs:
-
-```bash
-jobster job list --config jobster.yaml
-
-# Output:
-# ID            SCHEDULE      COMMAND                        WORKDIR   TIMEOUT
-# ──            ────────      ───────                        ───────   ───────
-# backup        @daily        /usr/bin/backup.sh             .         600s
-# api-check     */5 * * * *   curl http://api/health         .         30s
-```
-
-#### `jobster job remove` - Remove Job
-
-Remove a job from the configuration:
-
-```bash
-jobster job remove backup --config jobster.yaml
-```
-
-## Storage Backends
-
-### BoltDB (Recommended for Production)
-
-```yaml
-store:
-  driver: "bbolt"
-  path: "./.jobster.db"
-```
-
-- Embedded key-value database
-- ACID transactions
-- Single file storage
-- Good performance
-
-### JSON (Recommended for Development)
-
-```yaml
-store:
-  driver: "json"
-  path: "./.jobster.json"
-```
-
-- Simple JSON file
-- Human-readable
-- Good for testing
-- Limited scalability
-
-## Deployment
-
-### Linux Systemd Service (Production)
-
-Deploy Jobster as a systemd service on Linux with proper user isolation and auto-restart.
-
-#### Quick Install
-
-```bash
-# 1. Build binary
-go build -o jobster ./cmd/jobster
+# 1. Download and extract installer
+curl -LO https://github.com/caevv/jobster/releases/latest/download/install.sh
+chmod +x install.sh
 
 # 2. Install as system service
-sudo ./scripts/install.sh
+sudo ./install.sh
 
-# 3. Add your first job
-sudo -u jobster /usr/local/bin/jobster job add backup \
+# 3. Add your jobs
+sudo -u jobster jobster job add backup \
   --schedule "@daily" \
   --command "/usr/local/bin/backup.sh" \
   --config /etc/jobster/jobster.yaml
 
-# 4. Start the service
+# 4. Start and enable
 sudo systemctl enable jobster
 sudo systemctl start jobster
 
 # 5. Check status
 sudo systemctl status jobster
+```
+
+Your jobs are now running as a system service with auto-restart on failures.
+
+See [Deployment](#deployment) for full production setup guide.
+
+## Real-World Examples
+
+### Database Backup with Slack Notifications
+
+```bash
+# Add backup job
+jobster job add postgres-backup \
+  --schedule "0 2 * * *" \
+  --command "/opt/backup/pg_backup.sh" \
+  --timeout 1800
+```
+
+Then configure notifications in `jobster.yaml`:
+
+```yaml
+jobs:
+  - id: "postgres-backup"
+    schedule: "0 2 * * *"
+    command: "/opt/backup/pg_backup.sh"
+    timeout_sec: 1800
+    hooks:
+      on_success:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#ops"
+            message: "✅ Database backup completed"
+      on_error:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#alerts"
+            message: "🚨 Database backup FAILED"
+```
+
+### API Health Check Every 5 Minutes
+
+```bash
+jobster job add api-health-check \
+  --schedule "*/5 * * * *" \
+  --command "curl -f https://api.example.com/health" \
+  --timeout 30
+```
+
+### Weekly Report Generation
+
+```bash
+jobster job add weekly-report \
+  --schedule "@weekly" \
+  --command "/usr/local/bin/generate_report.py" \
+  --env "REPORT_TYPE=weekly" \
+  --env "OUTPUT_DIR=/var/reports"
+```
+
+### Disk Cleanup Every Day at 3 AM
+
+```bash
+jobster job add cleanup-old-logs \
+  --schedule "0 3 * * *" \
+  --command "find /var/log -name '*.log' -mtime +30 -delete" \
+  --timeout 600
+```
+
+## Configuration
+
+### Schedule Formats
+
+Jobster supports flexible schedule formats:
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| **Cron** | `0 2 * * *` | Daily at 2:00 AM |
+| **Cron** | `*/15 * * * *` | Every 15 minutes |
+| **Shortcuts** | `@hourly` | Every hour at :00 |
+| **Shortcuts** | `@daily` | Daily at midnight |
+| **Shortcuts** | `@weekly` | Weekly (Sunday midnight) |
+| **Shortcuts** | `@monthly` | Monthly (1st midnight) |
+| **Intervals** | `@every 5m` | Every 5 minutes |
+| **Intervals** | `@every 2h` | Every 2 hours |
+| **Intervals** | `@every 30s` | Every 30 seconds |
+
+### Configuration File
+
+Create `jobster.yaml` for advanced configuration:
+
+```yaml
+# Optional defaults (system timezone used if omitted)
+defaults:
+  timezone: "America/New_York"  # Job schedule timezone
+  agent_timeout_sec: 10         # Timeout for notification scripts
+  job_retries: 3                # Retry failed jobs
+  job_backoff_strategy: "exponential"
+
+# Where to store job history
+store:
+  driver: "bbolt"               # "bbolt" (recommended) or "json"
+  path: "./.jobster.db"
+
+# Your jobs
+jobs:
+  - id: "backup"
+    schedule: "@daily"
+    command: "/usr/local/bin/backup.sh"
+    workdir: "/opt/backup"      # Run command in this directory
+    timeout_sec: 3600           # Kill job after 1 hour
+    env:                        # Environment variables
+      BACKUP_TARGET: "production"
+      AWS_REGION: "us-east-1"
+```
+
+See [examples/](examples/) for more configuration examples.
+
+## Commands
+
+### Managing Jobs
+
+```bash
+# Add a job
+jobster job add <job-id> --schedule "<cron>" --command "<command>"
+
+# List all jobs
+jobster job list [--config jobster.yaml]
+
+# Remove a job
+jobster job remove <job-id> [--config jobster.yaml]
+
+# Interactive mode (prompts for details)
+jobster job add --interactive
+```
+
+**Full options for adding jobs:**
+```bash
+jobster job add my-job \
+  --schedule "@daily" \           # When to run (required)
+  --command "/path/to/script" \   # What to run (required)
+  --config jobster.yaml \         # Config file (default: jobster.yaml)
+  --workdir /some/directory \     # Working directory
+  --timeout 600 \                 # Timeout in seconds
+  --env KEY=VALUE \               # Environment variables (repeatable)
+  --env ANOTHER=VALUE
+```
+
+### Running the Scheduler
+
+```bash
+# Run in foreground (no dashboard)
+jobster run --config jobster.yaml
+
+# Run with web dashboard
+jobster serve --config jobster.yaml --addr :8080
+
+# Validate configuration
+jobster validate --config jobster.yaml
+```
+
+### Web Dashboard
+
+When running with `jobster serve`, access the dashboard at `http://localhost:8080`:
+
+- **Job Status** - See all jobs and their schedules
+- **Recent Runs** - View execution history
+- **Logs** - Check stdout/stderr from jobs
+- **Stats** - Success rates, run times
+
+API endpoints:
+- `GET /` - Dashboard UI
+- `GET /api/jobs` - List jobs (JSON)
+- `GET /api/runs` - Recent runs (JSON)
+- `GET /health` - Health check
+
+## Deployment
+
+### Linux Systemd (Recommended)
+
+Deploy Jobster as a system service with proper isolation:
+
+```bash
+# 1. Download binary
+curl -LO https://github.com/caevv/jobster/releases/latest/download/jobster-linux-amd64
+chmod +x jobster-linux-amd64
+sudo mv jobster-linux-amd64 /usr/local/bin/jobster
+
+# 2. Download systemd files
+curl -LO https://github.com/caevv/jobster/releases/latest/download/install.sh
+chmod +x install.sh
+
+# 3. Install service
+sudo ./install.sh
+
+# 4. Configure jobs
+sudo nano /etc/jobster/jobster.yaml
+# or use: sudo -u jobster jobster job add ...
+
+# 5. Start service
+sudo systemctl enable jobster
+sudo systemctl start jobster
+
+# 6. Monitor
+sudo systemctl status jobster
 sudo journalctl -u jobster -f
 ```
 
-#### Service Modes
+**Service directories:**
+- `/usr/local/bin/jobster` - Binary
+- `/etc/jobster/jobster.yaml` - Configuration
+- `/etc/jobster/agents/` - Notification scripts
+- `/var/lib/jobster/` - Job history database
+- `/var/log/jobster/` - Log files
 
-**Default: Headless Mode** (Recommended for production)
-```bash
-sudo systemctl enable jobster
-sudo systemctl start jobster
-```
-
-**Optional: Dashboard Mode** (For monitoring)
-```bash
-sudo systemctl disable jobster
-sudo systemctl enable jobster-dashboard
-sudo systemctl start jobster-dashboard
-# Access at http://server-ip:8080
-```
-
-#### Directory Layout
-
-```
-/usr/local/bin/jobster       # Binary
-/etc/jobster/jobster.yaml    # Configuration
-/etc/jobster/agents/         # Agent scripts
-/var/lib/jobster/            # Data/database
-/var/log/jobster/            # Logs
-```
-
-#### Service Management
-
+**Managing the service:**
 ```bash
 # Start/stop/restart
 sudo systemctl start jobster
@@ -387,213 +318,245 @@ sudo systemctl restart jobster
 
 # View logs
 sudo journalctl -u jobster -f
+sudo journalctl -u jobster --since "1 hour ago"
 
-# Manage jobs
-jobster job list --config /etc/jobster/jobster.yaml
-jobster job add <id> --schedule "<cron>" --command "<cmd>"
-jobster job remove <id>
+# Add/list/remove jobs
+sudo -u jobster jobster job list --config /etc/jobster/jobster.yaml
+sudo -u jobster jobster job add <id> --schedule "<cron>" --command "<cmd>"
+sudo -u jobster jobster job remove <id>
 ```
 
-See [systemd/README.md](systemd/README.md) for complete deployment documentation.
+**Optional: Enable web dashboard**
+
+By default, Jobster runs in headless mode. To enable the dashboard:
+
+```bash
+# Stop headless service
+sudo systemctl stop jobster
+sudo systemctl disable jobster
+
+# Enable dashboard service
+sudo systemctl enable jobster-dashboard
+sudo systemctl start jobster-dashboard
+
+# Access at http://server-ip:8080
+```
+
+See [systemd/README.md](systemd/README.md) for detailed deployment documentation.
 
 ### Docker (Coming Soon)
 
-Docker deployment with volume-based job definitions is planned for a future release.
+Docker deployment is planned for a future release.
 
-## Development
+## Notifications (Agents)
 
-### Prerequisites
+Send notifications when jobs succeed or fail using "agents" - simple scripts that run at specific points:
 
-- Go 1.25 or higher
-- Optional: `golangci-lint`, `gofumpt`
+- `pre_run` - Before job starts
+- `post_run` - After job finishes (always runs)
+- `on_success` - Only when job succeeds
+- `on_error` - Only when job fails
 
-### Build
+### Slack Notifications
 
-```bash
-# Build all packages
-go build ./...
-
-# Build binary with version info
-go build -ldflags "-X main.version=v1.0.0" -o jobster ./cmd/jobster
-```
-
-### Test
+**1. Create agent script** (`/etc/jobster/agents/send-slack.sh`):
 
 ```bash
-# Run all tests
-go test ./...
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Run with race detection and coverage
-go test -race -coverprofile=cover.out ./...
-go tool cover -html=cover.out
+# Read configuration
+config="${CONFIG_JSON:-{}}"
+channel="$(jq -r '.channel // "#ops"' <<<"$config")"
+message="$(jq -r '.message' <<<"$config")"
 
-# Run specific tests
-go test -v ./internal/config -run TestLoadConfig
+# Send to Slack
+curl -X POST "$SLACK_WEBHOOK_URL" \
+  -H 'Content-Type: application/json' \
+  -d "{\"channel\":\"$channel\",\"text\":\"$message\"}"
 ```
-
-### Lint & Format
 
 ```bash
-# Format code
-gofumpt -l -w .
-
-# Run linter
-golangci-lint run
+chmod +x /etc/jobster/agents/send-slack.sh
 ```
 
-## Project Structure
+**2. Configure job to use agent**:
 
-```
-jobster/
-├─ cmd/jobster/          # CLI entry point and commands
-│  ├─ main.go            # Main entry and root command
-│  ├─ run.go             # Run command (headless mode)
-│  ├─ serve.go           # Serve command (with dashboard)
-│  ├─ validate.go        # Validate command
-│  └─ runner.go          # Job execution orchestration
-├─ internal/
-│  ├─ config/            # YAML loader & validation
-│  ├─ scheduler/         # Cron wrapper and job management
-│  ├─ plugins/           # Agent discovery & execution
-│  ├─ store/             # Run history persistence
-│  ├─ logging/           # Structured logging
-│  └─ server/            # HTTP dashboard
-├─ agents/               # Example agent scripts
-├─ examples/             # Example configurations
-│  ├─ jobster.yaml       # Full-featured example
-│  ├─ minimal.yaml       # Minimal example
-│  ├─ hooks-demo.yaml    # Hook demonstration
-│  └─ README.md          # Config documentation
-└─ scripts/              # Dev helper scripts
+```yaml
+jobs:
+  - id: "backup"
+    schedule: "@daily"
+    command: "/usr/local/bin/backup.sh"
+    hooks:
+      on_success:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#ops"
+            message: "✅ Backup completed successfully"
+      on_error:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#alerts"
+            message: "🚨 Backup FAILED - check logs immediately"
 ```
 
-## Examples
-
-See the [examples/](examples/) directory for:
-
-- **jobster.yaml** - Full-featured production example
-- **minimal.yaml** - Minimal quick-start example
-- **hooks-demo.yaml** - Demonstration of all hook types
-- **README.md** - Complete configuration guide
-
-See the [agents/](agents/) directory for example plugins:
-
-- **send-slack.sh** - Slack notifications
-- **http-webhook.js** - HTTP webhooks
-- **log-metrics.py** - Metrics logging
-- **cleanup.sh** - File cleanup
-
-## Architecture
-
-```
-┌─────────────┐
-│   CLI       │  cobra-based command interface
-└──────┬──────┘
-       │
-┌──────▼──────────────────────────────────────┐
-│              Scheduler                       │  robfig/cron wrapper
-│  ┌────────────────────────────────────┐     │
-│  │         Job Runner                 │     │  Executes jobs
-│  │  ┌──────────┬──────────┬────────┐ │     │
-│  │  │ pre_run  │  command │ hooks  │ │     │
-│  │  └──────────┴──────────┴────────┘ │     │
-│  └────────────────────────────────────┘     │
-└──────┬───────────────────────┬──────────────┘
-       │                       │
-┌──────▼──────┐         ┌──────▼──────────┐
-│  Plugins    │         │     Store       │  BoltDB/JSON
-│  (Agents)   │         │   (History)     │
-└─────────────┘         └─────────────────┘
-       │
-┌──────▼──────────────────────────────────┐
-│   Optional HTTP Server (Dashboard)      │
-└─────────────────────────────────────────┘
-```
-
-## Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with proper tests
-4. Run linting and tests: `make lint test`
-5. Commit your changes using [Conventional Commits](#commit-message-format)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Commit Message Format
-
-This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and changelog generation.
-
-**Format:** `<type>(<scope>): <description>`
-
-**Types:**
-- `feat:` - New feature (triggers minor version bump)
-- `fix:` - Bug fix (triggers patch version bump)
-- `docs:` - Documentation changes
-- `chore:` - Maintenance tasks (dependencies, build, etc.)
-- `refactor:` - Code refactoring without behavior changes
-- `test:` - Adding or updating tests
-- `perf:` - Performance improvements
-
-**Examples:**
-```
-feat(scheduler): add support for timezone-aware cron schedules
-fix(plugins): resolve race condition in agent execution
-docs(readme): update installation instructions
-chore(deps): upgrade robfig/cron to v3.0.1
-```
-
-**Breaking Changes:** Add `BREAKING CHANGE:` in the commit body or use `!` after type (e.g., `feat!: ...`) to trigger a major version bump.
-
-### Local Development
+**3. Set Slack webhook URL** (in systemd service or environment):
 
 ```bash
-# Install dependencies
-go mod download
-
-# Run tests
-make test
-
-# Run linting
-make lint
-
-# Build binary
-make build
-
-# Format code
-make fmt
+export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
 ```
 
-See [AGENTS.md](AGENTS.md) for detailed development guidelines and [Makefile](Makefile) for all available commands.
+### Email Notifications
 
-## License
+Create `/etc/jobster/agents/send-email.sh`:
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+```bash
+#!/usr/bin/env bash
+config="${CONFIG_JSON:-{}}"
+to="$(jq -r '.to' <<<"$config")"
+subject="$(jq -r '.subject' <<<"$config")"
+body="Job: $JOB_ID\nStatus: $([ $EXIT_CODE -eq 0 ] && echo 'Success' || echo 'Failed')\nRun ID: $RUN_ID"
 
-## Roadmap
+echo -e "$body" | mail -s "$subject" "$to"
+```
 
-- [ ] Remote control API (gRPC/HTTP) for job CRUD
-- [ ] Signed agents + registry
-- [ ] HA leader election for clustered scheduling
-- [ ] WebSocket-based live job status
-- [ ] Docker deployment templates
-- [ ] Prometheus metrics exporter
-- [ ] Job dependency graphs
+```yaml
+hooks:
+  on_error:
+    - agent: "send-email.sh"
+      with:
+        to: "ops@example.com"
+        subject: "Job failure: backup"
+```
 
-## Related Projects
+### Custom Agents
 
-- [robfig/cron](https://github.com/robfig/cron) - Cron library used by Jobster
-- [spf13/cobra](https://github.com/spf13/cobra) - CLI framework
-- [etcd-io/bbolt](https://github.com/etcd-io/bbolt) - Embedded database
+Agents can be written in any language (Bash, Python, Node.js, Go). They receive information via environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `JOB_ID` | Job identifier |
+| `JOB_COMMAND` | Command that ran |
+| `HOOK` | Hook type (pre_run, on_success, etc.) |
+| `RUN_ID` | Unique run ID |
+| `EXIT_CODE` | Job exit code |
+| `START_TS` | Start timestamp |
+| `END_TS` | End timestamp |
+| `CONFIG_JSON` | Your agent configuration as JSON |
+
+See [agents/](agents/) for more examples.
+
+## Troubleshooting
+
+### Jobs not running
+
+**Check service status:**
+```bash
+sudo systemctl status jobster
+sudo journalctl -u jobster --since "1 hour ago"
+```
+
+**Verify schedule syntax:**
+```bash
+jobster validate --config /etc/jobster/jobster.yaml
+```
+
+**Check timezone:**
+```yaml
+defaults:
+  timezone: "America/New_York"  # Make sure this matches your expected timezone
+```
+
+### Job fails but no error in logs
+
+**Check job timeout:**
+```yaml
+jobs:
+  - id: "long-running-job"
+    timeout_sec: 7200  # Increase if job takes longer than 10 minutes (default: 600)
+```
+
+**Check working directory:**
+```yaml
+jobs:
+  - id: "my-job"
+    workdir: "/path/to/workdir"  # Command runs in this directory
+```
+
+**Test command manually:**
+```bash
+# Run as jobster user
+sudo -u jobster /path/to/command
+```
+
+### Notifications not sending
+
+**Check agent is executable:**
+```bash
+ls -l /etc/jobster/agents/send-slack.sh  # Should show +x permission
+chmod +x /etc/jobster/agents/send-slack.sh
+```
+
+**Check agent environment variables:**
+```bash
+# Test agent manually
+export CONFIG_JSON='{"channel":"#test","message":"test"}'
+export JOB_ID="test-job"
+export SLACK_WEBHOOK_URL="https://..."
+/etc/jobster/agents/send-slack.sh
+```
+
+**Enable agent allow-list** (optional security):
+```yaml
+security:
+  allowed_agents:
+    - "send-slack.sh"
+    - "send-email.sh"
+```
+
+### Permission denied errors
+
+**Check file permissions:**
+```bash
+# Jobster user needs read access to scripts
+sudo chown -R jobster:jobster /etc/jobster
+sudo chmod -R 755 /etc/jobster/agents
+```
+
+**Check command permissions:**
+```bash
+# Test as jobster user
+sudo -u jobster /path/to/command
+```
+
+### High CPU or memory usage
+
+**Check for runaway jobs:**
+```bash
+# View active jobs
+ps aux | grep jobster
+
+# Check logs for stuck jobs
+sudo journalctl -u jobster | grep "execution completed"
+```
+
+**Add timeouts to all jobs:**
+```yaml
+jobs:
+  - id: "my-job"
+    timeout_sec: 600  # Kill after 10 minutes
+```
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/caevv/jobster/issues)
-- **Documentation:** [AGENTS.md](AGENTS.md), [examples/README.md](examples/README.md)
+- 📖 **Documentation:** [examples/](examples/) and [AGENTS.md](AGENTS.md)
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/caevv/jobster/issues)
+- 💡 **Feature Requests:** [GitHub Issues](https://github.com/caevv/jobster/issues)
+- 👥 **Contributing:** See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## License
+
+Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ---
 
