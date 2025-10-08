@@ -1,0 +1,88 @@
+# Jobster example configuration
+# This file demonstrates the full configuration schema for Jobster
+
+defaults:
+  timezone: "UTC"
+  agent_timeout_sec: 10
+  fail_on_agent_error: false
+  job_retries: 3
+  job_backoff_strategy: "exponential"
+
+store:
+  driver: "bbolt"
+  path: "./.jobster.db"
+
+security:
+  allowed_agents:
+    - "send-slack.sh"
+    - "http-webhook.js"
+    - "email-notify.sh"
+
+jobs:
+  # Example 1: Nightly report generation with Slack notification
+  - id: "nightly-report"
+    schedule: "0 2 * * *"
+    command: "/usr/local/bin/gen-report"
+    workdir: "/var/app"
+    timeout_sec: 600
+    env:
+      REPORT_ENV: "prod"
+      REPORT_FORMAT: "pdf"
+    hooks:
+      on_success:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#ops"
+            message: "Nightly report finished successfully"
+
+  # Example 2: Database backup with error notification
+  - id: "db-backup"
+    schedule: "0 3 * * *"
+    command: "/usr/local/bin/backup-db"
+    workdir: "/var/backups"
+    timeout_sec: 1800
+    env:
+      DB_HOST: "localhost"
+      DB_NAME: "production"
+      BACKUP_RETENTION_DAYS: "30"
+    hooks:
+      on_success:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#ops"
+            message: "Database backup completed"
+      on_error:
+        - agent: "http-webhook.js"
+          with:
+            url: "https://hooks.example.com/jobster/error"
+            severity: "high"
+
+  # Example 3: Periodic health check using @every syntax
+  - id: "health-check"
+    schedule: "@every 5m"
+    command: "/usr/local/bin/health-check"
+    timeout_sec: 30
+    hooks:
+      on_error:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#alerts"
+            message: "Health check failed!"
+
+  # Example 4: Daily cleanup with pre-run validation
+  - id: "cleanup-temp"
+    schedule: "@daily"
+    command: "/usr/local/bin/cleanup"
+    workdir: "/tmp"
+    timeout_sec: 300
+    hooks:
+      pre_run:
+        - agent: "email-notify.sh"
+          with:
+            to: "admin@example.com"
+            subject: "Cleanup job starting"
+      post_run:
+        - agent: "email-notify.sh"
+          with:
+            to: "admin@example.com"
+            subject: "Cleanup job finished"

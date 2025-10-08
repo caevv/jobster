@@ -1,0 +1,63 @@
+# Jobster configuration demonstrating all hook types
+# Shows how to use pre_run, post_run, on_success, and on_error hooks
+
+defaults:
+  timezone: "America/New_York"
+  agent_timeout_sec: 15
+  fail_on_agent_error: false
+
+store:
+  driver: "bbolt"
+  path: "./hooks-demo.db"
+
+security:
+  allowed_agents:
+    - "send-slack.sh"
+    - "log-metrics.py"
+    - "cleanup.sh"
+
+jobs:
+  - id: "demo-all-hooks"
+    schedule: "@every 10m"
+    command: "echo 'Demo job with all hooks'"
+    workdir: "/tmp"
+    timeout_sec: 120
+    env:
+      JOB_ENV: "demo"
+
+    hooks:
+      # Runs before job execution
+      pre_run:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#jobs"
+            message: "Starting demo job..."
+
+      # Runs after job execution (regardless of success/failure)
+      post_run:
+        - agent: "log-metrics.py"
+          with:
+            metric_type: "job_execution"
+            tags: ["demo", "example"]
+
+      # Runs only if job succeeds (exit code 0)
+      on_success:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#jobs"
+            message: "Demo job completed successfully!"
+        - agent: "cleanup.sh"
+          with:
+            target_dirs: ["/tmp/demo-cache"]
+            max_age_days: 7
+
+      # Runs only if job fails (non-zero exit code)
+      on_error:
+        - agent: "send-slack.sh"
+          with:
+            channel: "#alerts"
+            message: "ALERT: Demo job failed!"
+        - agent: "log-metrics.py"
+          with:
+            metric_type: "job_failure"
+            severity: "high"

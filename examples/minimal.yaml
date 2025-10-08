@@ -1,0 +1,23 @@
+# Minimal Jobster configuration
+# Demonstrates the simplest possible setup
+
+# All fields under 'defaults' are optional
+# defaults:
+#   timezone: "America/New_York"  # Defaults to system timezone if omitted
+
+store:
+  driver: "json"
+  path: "./.jobster.json"
+
+jobs:
+  # Simple job that runs every hour
+  - id: "hourly-task"
+    schedule: "@hourly"
+    command: "echo 'Running hourly task'"
+    timeout_sec: 60
+
+  # Simple job that runs every 5 minutes
+  - id: "frequent-task"
+    schedule: "@every 5m"
+    command: "/usr/local/bin/check-status"
+    timeout_sec: 30

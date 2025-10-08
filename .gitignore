@@ -1,0 +1,58 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/jobster
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+cover.out
+coverage.html
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jobster-specific files
+*.db
+*.jobster.db
+*.jobster.json
+.jobster/
+.test.json
+
+# Log files
+*.log
+*.stdout.log
+*.stderr.log
+
+# Temporary test files
+test-*.yaml
+tmp/
+temp/
+
+# Build artifacts
+dist/
+build/
+bin/
+
+# Environment files
+.env
+.env.local
+*.pem
+*.key
+credentials.json

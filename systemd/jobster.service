@@ -1,0 +1,28 @@
+[Unit]
+Description=Jobster - Lightweight Cron Job Scheduler
+Documentation=https://github.com/caevv/jobster
+After=network.target
+
+[Service]
+Type=simple
+User=jobster
+Group=jobster
+WorkingDirectory=/etc/jobster
+ExecStart=/usr/local/bin/jobster run --config /etc/jobster/jobster.yaml
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/jobster /var/log/jobster
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jobster
+
+[Install]
+WantedBy=multi-user.target
