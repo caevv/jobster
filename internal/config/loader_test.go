@@ -406,7 +406,7 @@ func TestValidateAgents(t *testing.T) {
 			job: Job{
 				ID:       "test",
 				Schedule: "@daily",
-				Command: NewCommandSpec("/bin/test"),
+				Command:  NewCommandSpec("/bin/test"),
 				Hooks: Hooks{
 					OnSuccess: []Agent{
 						{Agent: "notify.sh"},
@@ -423,7 +423,7 @@ func TestValidateAgents(t *testing.T) {
 			job: Job{
 				ID:       "test",
 				Schedule: "@daily",
-				Command: NewCommandSpec("/bin/test"),
+				Command:  NewCommandSpec("/bin/test"),
 				Hooks: Hooks{
 					PreRun: []Agent{
 						{Agent: "blocked.sh"},
@@ -437,7 +437,7 @@ func TestValidateAgents(t *testing.T) {
 			job: Job{
 				ID:       "test",
 				Schedule: "@daily",
-				Command: NewCommandSpec("/bin/test"),
+				Command:  NewCommandSpec("/bin/test"),
 				Hooks: Hooks{
 					PostRun: []Agent{
 						{Agent: "blocked.sh"},
@@ -451,7 +451,7 @@ func TestValidateAgents(t *testing.T) {
 			job: Job{
 				ID:       "test",
 				Schedule: "@daily",
-				Command: NewCommandSpec("/bin/test"),
+				Command:  NewCommandSpec("/bin/test"),
 			},
 			wantError: false,
 		},
@@ -476,7 +476,7 @@ func TestApplyDefaults(t *testing.T) {
 			{
 				ID:       "test-job",
 				Schedule: "@daily",
-				Command: NewCommandSpec("/bin/test"),
+				Command:  NewCommandSpec("/bin/test"),
 			},
 		},
 	}

@@ -65,7 +65,7 @@ func TestScheduler_AddJob(t *testing.T) {
 			job: &config.Job{
 				ID:       "test-job",
 				Schedule: "*/5 * * * *",
-				Command: config.NewCommandSpec("echo test"),
+				Command:  config.NewCommandSpec("echo test"),
 			},
 			runner:  &mockJobRunner{},
 			wantErr: false,
@@ -75,7 +75,7 @@ func TestScheduler_AddJob(t *testing.T) {
 			job: &config.Job{
 				ID:       "hourly-job",
 				Schedule: "@hourly",
-				Command: config.NewCommandSpec("echo hourly"),
+				Command:  config.NewCommandSpec("echo hourly"),
 			},
 			runner:  &mockJobRunner{},
 			wantErr: false,
@@ -85,7 +85,7 @@ func TestScheduler_AddJob(t *testing.T) {
 			job: &config.Job{
 				ID:       "interval-job",
 				Schedule: "@every 5m",
-				Command: config.NewCommandSpec("echo interval"),
+				Command:  config.NewCommandSpec("echo interval"),
 			},
 			runner:  &mockJobRunner{},
 			wantErr: false,
@@ -102,7 +102,7 @@ func TestScheduler_AddJob(t *testing.T) {
 			job: &config.Job{
 				ID:       "test-job",
 				Schedule: "*/5 * * * *",
-				Command: config.NewCommandSpec("echo test"),
+				Command:  config.NewCommandSpec("echo test"),
 			},
 			runner:    nil,
 			wantErr:   true,
@@ -113,7 +113,7 @@ func TestScheduler_AddJob(t *testing.T) {
 			job: &config.Job{
 				ID:       "",
 				Schedule: "*/5 * * * *",
-				Command: config.NewCommandSpec("echo test"),
+				Command:  config.NewCommandSpec("echo test"),
 			},
 			runner:    &mockJobRunner{},
 			wantErr:   true,
@@ -124,7 +124,7 @@ func TestScheduler_AddJob(t *testing.T) {
 			job: &config.Job{
 				ID:       "bad-schedule",
 				Schedule: "invalid cron",
-				Command: config.NewCommandSpec("echo test"),
+				Command:  config.NewCommandSpec("echo test"),
 			},
 			runner:  &mockJobRunner{},
 			wantErr: true,
@@ -134,7 +134,7 @@ func TestScheduler_AddJob(t *testing.T) {
 			job: &config.Job{
 				ID:       "test-job", // Already added in first test
 				Schedule: "*/5 * * * *",
-				Command: config.NewCommandSpec("echo test"),
+				Command:  config.NewCommandSpec("echo test"),
 			},
 			runner:    &mockJobRunner{},
 			wantErr:   true,
@@ -175,7 +175,7 @@ func TestScheduler_GetJob(t *testing.T) {
 	job := &config.Job{
 		ID:       "get-test",
 		Schedule: "@hourly",
-		Command: config.NewCommandSpec("echo test"),
+		Command:  config.NewCommandSpec("echo test"),
 	}
 
 	// Add the job
@@ -238,7 +238,7 @@ func TestScheduler_StartStop(t *testing.T) {
 	job := &config.Job{
 		ID:       "start-stop-test",
 		Schedule: "@every 1s",
-		Command: config.NewCommandSpec("echo test"),
+		Command:  config.NewCommandSpec("echo test"),
 	}
 
 	err := sched.AddJob(job, runner)
@@ -278,7 +278,7 @@ func TestScheduler_ContextCancellation(t *testing.T) {
 	job := &config.Job{
 		ID:       "cancel-test",
 		Schedule: "@every 1s",
-		Command: config.NewCommandSpec("echo test"),
+		Command:  config.NewCommandSpec("echo test"),
 	}
 
 	err := sched.AddJob(job, runner)
@@ -318,7 +318,7 @@ func TestScheduler_GetJobStats(t *testing.T) {
 	job := &config.Job{
 		ID:       "stats-test",
 		Schedule: "@every 1s",
-		Command: config.NewCommandSpec("echo test"),
+		Command:  config.NewCommandSpec("echo test"),
 	}
 
 	err := sched.AddJob(job, runner)
@@ -377,7 +377,7 @@ func TestScheduler_JobTimeout(t *testing.T) {
 	job := &config.Job{
 		ID:         "timeout-test",
 		Schedule:   "@every 1s",
-		Command: config.NewCommandSpec("echo test"),
+		Command:    config.NewCommandSpec("echo test"),
 		TimeoutSec: 1, // 1 second timeout
 	}
 
