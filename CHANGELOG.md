@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/caevv/jobster/compare/v1.1.0...v1.1.1) (2025-10-08)
+
+
+### Bug Fixes
+
+* **ci:** use semantic-release action for proper output handling ([9643432](https://github.com/caevv/jobster/commit/9643432494ee0afd192c3628c281107ef36cb97c))
+
 # [1.1.0](https://github.com/caevv/jobster/compare/v1.0.0...v1.1.0) (2025-10-08)
 
 
