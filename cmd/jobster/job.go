@@ -140,7 +140,7 @@ func runAddJob(cmd *cobra.Command, args []string) error {
 		job = config.Job{
 			ID:         jobID,
 			Schedule:   schedule,
-			Command:    command,
+			Command:    config.NewCommandSpec(command),
 			Workdir:    workdir,
 			TimeoutSec: timeout,
 			Env:        env,
@@ -160,7 +160,7 @@ func runAddJob(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("✓ Job '%s' added successfully to %s\n", job.ID, configPath)
 	fmt.Printf("  Schedule: %s\n", job.Schedule)
-	fmt.Printf("  Command:  %s\n", job.Command)
+	fmt.Printf("  Command:  %s\n", job.Command.String())
 
 	return nil
 }
@@ -197,7 +197,7 @@ func runListJobs(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%ds\n",
 			job.ID,
 			job.Schedule,
-			truncate(job.Command, 40),
+			truncate(job.Command.String(), 40),
 			workdir,
 			job.TimeoutSec,
 		)
@@ -254,7 +254,7 @@ func promptForJob() (config.Job, error) {
 	if err != nil {
 		return job, err
 	}
-	job.Command = strings.TrimSpace(command)
+	job.Command.Set(strings.TrimSpace(command))
 
 	// Working directory (optional)
 	fmt.Print("Working directory (optional, press Enter to skip): ")
@@ -306,7 +306,7 @@ func promptForJob() (config.Job, error) {
 	fmt.Println("\n=== Job Preview ===")
 	fmt.Printf("ID:       %s\n", job.ID)
 	fmt.Printf("Schedule: %s\n", job.Schedule)
-	fmt.Printf("Command:  %s\n", job.Command)
+	fmt.Printf("Command:  %s\n", job.Command.String())
 	if job.Workdir != "" {
 		fmt.Printf("Workdir:  %s\n", job.Workdir)
 	}

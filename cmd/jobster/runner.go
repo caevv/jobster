@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/caevv/jobster/internal/config"
@@ -63,7 +62,7 @@ func (r *Runner) RunJob(ctx context.Context, job *config.Job) error {
 		"job_id", job.ID,
 		"run_id", runID,
 		"schedule", job.Schedule,
-		"command", job.Command)
+		"command", job.Command.String())
 
 	// Create run record
 	run := &store.JobRun{
@@ -85,7 +84,7 @@ func (r *Runner) RunJob(ctx context.Context, job *config.Job) error {
 	// Create hook context
 	hookParams := plugins.AgentParams{
 		JobID:       job.ID,
-		JobCommand:  job.Command,
+		JobCommand:  job.Command.String(),
 		JobSchedule: job.Schedule,
 		RunID:       runID,
 		Attempt:     1,
@@ -209,8 +208,8 @@ func (r *Runner) executeCommand(ctx context.Context, job *config.Job) (int, stri
 	cmdCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// Parse command (simple split on spaces, should handle quoted args properly in production)
-	parts := strings.Fields(job.Command)
+	// Get command parts (preserves array structure from YAML)
+	parts := job.Command.Parts()
 	if len(parts) == 0 {
 		return -1, "", "", fmt.Errorf("empty command")
 	}

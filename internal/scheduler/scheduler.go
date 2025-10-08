@@ -137,7 +137,7 @@ func (s *Scheduler) wrapJob(job *config.Job, runner JobRunner) cron.FuncJob {
 
 		s.logger.Info("starting job execution",
 			slog.String("job_id", job.ID),
-			slog.String("command", job.Command),
+			slog.String("command", job.Command.String()),
 		)
 
 		startTime := time.Now()
@@ -258,10 +258,17 @@ func (s *Scheduler) GetJobStats(jobID string) (*JobStats, bool) {
 		return nil, false
 	}
 
+	// Get the most up-to-date next run time from cron
+	nextRun := sj.nextRun
+	entry := s.cron.Entry(sj.entryID)
+	if entry.ID != 0 {
+		nextRun = entry.Next
+	}
+
 	return &JobStats{
 		JobID:    jobID,
 		LastRun:  sj.lastRun,
-		NextRun:  sj.nextRun,
+		NextRun:  nextRun,
 		RunCount: sj.runCount,
 	}, true
 }

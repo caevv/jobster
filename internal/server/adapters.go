@@ -135,7 +135,7 @@ func (a *SchedulerAdapter) GetJobs(ctx context.Context) ([]JobSummary, error) {
 		summary := JobSummary{
 			ID:       job.ID,
 			Schedule: job.Schedule,
-			Command:  job.Command,
+			Command:  job.Command.String(),
 		}
 
 		if stats != nil && !stats.LastRun.IsZero() {
@@ -163,7 +163,7 @@ func (a *SchedulerAdapter) GetJob(ctx context.Context, jobID string) (*JobSummar
 	summary := &JobSummary{
 		ID:       job.ID,
 		Schedule: job.Schedule,
-		Command:  job.Command,
+		Command:  job.Command.String(),
 	}
 
 	if stats != nil && !stats.LastRun.IsZero() {

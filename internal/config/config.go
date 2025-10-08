@@ -70,22 +70,27 @@ type Agent struct {
 // - A string: "echo hello"
 // - An array: ["/bin/echo", "hello"]
 type CommandSpec struct {
-	value string
+	parts []string // Store as array internally for proper execution
 }
 
-// String returns the command as a string for execution.
+// String returns the command as a string for display.
 func (c CommandSpec) String() string {
-	return c.value
+	return strings.Join(c.parts, " ")
+}
+
+// Parts returns the command as an array of arguments for execution.
+func (c CommandSpec) Parts() []string {
+	return c.parts
 }
 
 // Set sets the command value from a string.
 func (c *CommandSpec) Set(value string) {
-	c.value = value
+	c.parts = strings.Fields(value)
 }
 
 // NewCommandSpec creates a new CommandSpec from a string.
 func NewCommandSpec(value string) CommandSpec {
-	return CommandSpec{value: value}
+	return CommandSpec{parts: strings.Fields(value)}
 }
 
 // UnmarshalYAML implements custom unmarshaling to support both string and array formats.
@@ -93,16 +98,14 @@ func (c *CommandSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	// Try to unmarshal as a string first
 	var strValue string
 	if err := unmarshal(&strValue); err == nil {
-		c.value = strValue
+		c.parts = strings.Fields(strValue)
 		return nil
 	}
 
 	// Try to unmarshal as an array
 	var arrValue []string
 	if err := unmarshal(&arrValue); err == nil {
-		// Join array elements with spaces for execution
-		// First element is the command, rest are arguments
-		c.value = strings.Join(arrValue, " ")
+		c.parts = arrValue
 		return nil
 	}
 
@@ -111,5 +114,5 @@ func (c *CommandSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 // MarshalYAML implements custom marshaling.
 func (c CommandSpec) MarshalYAML() (interface{}, error) {
-	return c.value, nil
+	return c.String(), nil
 }

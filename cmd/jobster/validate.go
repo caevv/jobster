@@ -63,7 +63,7 @@ func validateConfig(cmd *cobra.Command, args []string) error {
 		logger.Info(fmt.Sprintf("job %d", i+1),
 			"id", job.ID,
 			"schedule", job.Schedule,
-			"command", job.Command,
+			"command", job.Command.String(),
 			"timeout_sec", job.TimeoutSec,
 			"workdir", job.Workdir)
 

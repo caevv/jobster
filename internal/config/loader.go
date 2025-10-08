@@ -100,7 +100,7 @@ func validate(cfg *Config) error {
 		if job.Schedule == "" {
 			return fmt.Errorf("job %s is missing a schedule", job.ID)
 		}
-		if job.Command == "" {
+		if job.Command.String() == "" {
 			return fmt.Errorf("job %s is missing a command", job.ID)
 		}
 
