@@ -271,7 +271,7 @@ func TestIntegration_MultipleJobs(t *testing.T) {
 func TestIntegration_JobWithHooks(t *testing.T) {
 	tmpDir := t.TempDir()
 	agentDir := filepath.Join(tmpDir, "agents")
-	err := os.MkdirAll(agentDir, 0755)
+	err := os.MkdirAll(agentDir, 0o755)
 	if err != nil {
 		t.Fatalf("Failed to create agent dir: %v", err)
 	}
@@ -282,7 +282,7 @@ echo "Hook executed: $HOOK for job $JOB_ID"
 exit 0
 `
 	agentPath := filepath.Join(agentDir, "test-agent.sh")
-	err = os.WriteFile(agentPath, []byte(agentScript), 0755)
+	err = os.WriteFile(agentPath, []byte(agentScript), 0o755)
 	if err != nil {
 		t.Fatalf("Failed to create agent script: %v", err)
 	}

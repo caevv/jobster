@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	version       = "v0.1.0"
-	defaultLimit  = 100
-	maxLimit      = 1000
+	version      = "v0.1.0"
+	defaultLimit = 100
+	maxLimit     = 1000
 )
 
 // handleHealth returns the health status of the server

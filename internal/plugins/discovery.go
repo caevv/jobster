@@ -104,7 +104,7 @@ func isExecutable(path string) bool {
 
 	// Check if file has execute permission for user, group, or others
 	mode := info.Mode()
-	return mode&0111 != 0
+	return mode&0o111 != 0
 }
 
 // FindAgent looks up an agent by name in the discovered agents map

@@ -32,7 +32,7 @@ func TestExecuteHooks(t *testing.T) {
 	// Create temporary directory for test agents
 	tempDir := t.TempDir()
 	agentsDir := filepath.Join(tempDir, "agents")
-	if err := os.Mkdir(agentsDir, 0755); err != nil {
+	if err := os.Mkdir(agentsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -43,7 +43,7 @@ echo "Hook executed: $HOOK"
 echo '{"status":"ok"}'
 exit 0
 `
-	if err := os.WriteFile(successAgent, []byte(successScript), 0755); err != nil {
+	if err := os.WriteFile(successAgent, []byte(successScript), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -53,7 +53,7 @@ exit 0
 echo "Failed" >&2
 exit 1
 `
-	if err := os.WriteFile(failAgent, []byte(failScript), 0755); err != nil {
+	if err := os.WriteFile(failAgent, []byte(failScript), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -190,18 +190,18 @@ func TestValidateHooks(t *testing.T) {
 	// Create temporary directory for test agents
 	tempDir := t.TempDir()
 	agentsDir := filepath.Join(tempDir, "agents")
-	if err := os.Mkdir(agentsDir, 0755); err != nil {
+	if err := os.Mkdir(agentsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create test agents
 	agent1 := filepath.Join(agentsDir, "agent1.sh")
-	if err := os.WriteFile(agent1, []byte("#!/bin/bash\necho test"), 0755); err != nil {
+	if err := os.WriteFile(agent1, []byte("#!/bin/bash\necho test"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	agent2 := filepath.Join(agentsDir, "agent2.sh")
-	if err := os.WriteFile(agent2, []byte("#!/bin/bash\necho test"), 0755); err != nil {
+	if err := os.WriteFile(agent2, []byte("#!/bin/bash\necho test"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -315,7 +315,7 @@ func TestConfigJSONMarshaling(t *testing.T) {
 	// Create temporary directory for test agents
 	tempDir := t.TempDir()
 	agentsDir := filepath.Join(tempDir, "agents")
-	if err := os.Mkdir(agentsDir, 0755); err != nil {
+	if err := os.Mkdir(agentsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -324,7 +324,7 @@ func TestConfigJSONMarshaling(t *testing.T) {
 	configScript := `#!/bin/bash
 echo "$CONFIG_JSON"
 `
-	if err := os.WriteFile(configAgent, []byte(configScript), 0755); err != nil {
+	if err := os.WriteFile(configAgent, []byte(configScript), 0o755); err != nil {
 		t.Fatal(err)
 	}
 

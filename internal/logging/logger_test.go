@@ -11,10 +11,10 @@ import (
 
 func TestNew(t *testing.T) {
 	tests := []struct {
-		name     string
-		level    string
-		wantLvl  slog.Level
-		logFunc  func(*slog.Logger)
+		name      string
+		level     string
+		wantLvl   slog.Level
+		logFunc   func(*slog.Logger)
 		shouldLog bool
 	}{
 		{
@@ -80,10 +80,10 @@ func TestNew(t *testing.T) {
 
 func TestSecretRedaction(t *testing.T) {
 	tests := []struct {
-		name          string
-		key           string
-		value         string
-		shouldRedact  bool
+		name         string
+		key          string
+		value        string
+		shouldRedact bool
 	}{
 		{
 			name:         "redact API_TOKEN",
@@ -211,8 +211,8 @@ func TestWithFields(t *testing.T) {
 	logger := NewWithWriter(&buf, "info")
 
 	fields := map[string]any{
-		"job_id": "test-job",
-		"run_id": "run-123",
+		"job_id":  "test-job",
+		"run_id":  "run-123",
 		"attempt": 1,
 	}
 

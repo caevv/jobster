@@ -10,19 +10,19 @@ func TestDiscoverAgents(t *testing.T) {
 	// Create temporary directory for test agents
 	tempDir := t.TempDir()
 	agentsDir := filepath.Join(tempDir, "agents")
-	if err := os.Mkdir(agentsDir, 0755); err != nil {
+	if err := os.Mkdir(agentsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create executable agent
 	executableAgent := filepath.Join(agentsDir, "test-agent.sh")
-	if err := os.WriteFile(executableAgent, []byte("#!/bin/bash\necho test"), 0755); err != nil {
+	if err := os.WriteFile(executableAgent, []byte("#!/bin/bash\necho test"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create non-executable file
 	nonExecutable := filepath.Join(agentsDir, "readme.txt")
-	if err := os.WriteFile(nonExecutable, []byte("readme"), 0644); err != nil {
+	if err := os.WriteFile(nonExecutable, []byte("readme"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -53,30 +53,30 @@ func TestDiscoverAgents_MultiplePaths(t *testing.T) {
 	// Create two temporary directories
 	tempDir1 := t.TempDir()
 	agentsDir1 := filepath.Join(tempDir1, "agents1")
-	if err := os.Mkdir(agentsDir1, 0755); err != nil {
+	if err := os.Mkdir(agentsDir1, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	tempDir2 := t.TempDir()
 	agentsDir2 := filepath.Join(tempDir2, "agents2")
-	if err := os.Mkdir(agentsDir2, 0755); err != nil {
+	if err := os.Mkdir(agentsDir2, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create agents in both directories
 	agent1 := filepath.Join(agentsDir1, "agent1.sh")
-	if err := os.WriteFile(agent1, []byte("#!/bin/bash\necho agent1"), 0755); err != nil {
+	if err := os.WriteFile(agent1, []byte("#!/bin/bash\necho agent1"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	agent2 := filepath.Join(agentsDir2, "agent2.sh")
-	if err := os.WriteFile(agent2, []byte("#!/bin/bash\necho agent2"), 0755); err != nil {
+	if err := os.WriteFile(agent2, []byte("#!/bin/bash\necho agent2"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create duplicate in second directory (should not override first)
 	duplicateAgent1 := filepath.Join(agentsDir2, "agent1.sh")
-	if err := os.WriteFile(duplicateAgent1, []byte("#!/bin/bash\necho duplicate"), 0755); err != nil {
+	if err := os.WriteFile(duplicateAgent1, []byte("#!/bin/bash\necho duplicate"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -139,13 +139,13 @@ func TestIsExecutable(t *testing.T) {
 
 	// Create executable file
 	execFile := filepath.Join(tempDir, "executable")
-	if err := os.WriteFile(execFile, []byte("test"), 0755); err != nil {
+	if err := os.WriteFile(execFile, []byte("test"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create non-executable file
 	nonExecFile := filepath.Join(tempDir, "nonexecutable")
-	if err := os.WriteFile(nonExecFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(nonExecFile, []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

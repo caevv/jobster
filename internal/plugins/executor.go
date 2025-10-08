@@ -37,8 +37,8 @@ type AgentParams struct {
 	ExitCode int
 
 	// Configuration
-	ConfigJSON string
-	StateDir   string
+	ConfigJSON  string
+	StateDir    string
 	HistoryFile string
 
 	// Additional environment variables

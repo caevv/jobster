@@ -10,10 +10,10 @@ type Config struct {
 
 // Defaults holds default configuration values applied across jobs and agents.
 type Defaults struct {
-	Timezone          string `yaml:"timezone"`
-	AgentTimeoutSec   int    `yaml:"agent_timeout_sec"`
-	FailOnAgentError  bool   `yaml:"fail_on_agent_error"`
-	JobRetries        int    `yaml:"job_retries"`          // optional: default 0
+	Timezone           string `yaml:"timezone"`
+	AgentTimeoutSec    int    `yaml:"agent_timeout_sec"`
+	FailOnAgentError   bool   `yaml:"fail_on_agent_error"`
+	JobRetries         int    `yaml:"job_retries"`          // optional: default 0
 	JobBackoffStrategy string `yaml:"job_backoff_strategy"` // optional: "linear" or "exponential"
 }
 

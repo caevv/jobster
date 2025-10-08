@@ -310,7 +310,7 @@ jobs:
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temp file with YAML content
 			tmpFile := filepath.Join(t.TempDir(), "config.yaml")
-			if err := os.WriteFile(tmpFile, []byte(tt.yaml), 0644); err != nil {
+			if err := os.WriteFile(tmpFile, []byte(tt.yaml), 0o644); err != nil {
 				t.Fatalf("failed to write temp config: %v", err)
 			}
 
@@ -349,7 +349,7 @@ jobs:
     command: "/bin/test"
     invalid: [unclosed
 `
-	if err := os.WriteFile(tmpFile, []byte(invalidYAML), 0644); err != nil {
+	if err := os.WriteFile(tmpFile, []byte(invalidYAML), 0o644); err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 

@@ -424,7 +424,7 @@ func TestNewJSONStore_LoadExisting(t *testing.T) {
     }
   ]
 }`
-	err := os.WriteFile(dbPath, []byte(existingData), 0600)
+	err := os.WriteFile(dbPath, []byte(existingData), 0o600)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}

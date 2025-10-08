@@ -77,7 +77,7 @@ func (s *JSONStore) save() error {
 
 	// Write to temp file first, then rename (atomic on POSIX)
 	tmpPath := s.path + ".tmp"
-	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
+	if err := os.WriteFile(tmpPath, data, 0o600); err != nil {
 		return fmt.Errorf("write temp file: %w", err)
 	}
 

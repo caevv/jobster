@@ -41,8 +41,8 @@ func NewRunner(st store.Store, pluginMgr *plugins.AgentExecutor, defaults config
 	historyDir := filepath.Join(homeDir, ".jobster", "history")
 
 	// Ensure directories exist
-	os.MkdirAll(stateDir, 0755)
-	os.MkdirAll(historyDir, 0755)
+	os.MkdirAll(stateDir, 0o755)
+	os.MkdirAll(historyDir, 0o755)
 
 	return &Runner{
 		store:      st,
@@ -80,7 +80,7 @@ func (r *Runner) RunJob(ctx context.Context, job *config.Job) error {
 
 	// Create job-specific state directory
 	jobStateDir := filepath.Join(r.stateDir, job.ID)
-	os.MkdirAll(jobStateDir, 0755)
+	os.MkdirAll(jobStateDir, 0o755)
 
 	// Create hook context
 	hookParams := plugins.AgentParams{
@@ -264,12 +264,12 @@ func (r *Runner) tailOutput(output string, maxChars int) string {
 // saveFullLogs saves complete logs to history directory
 func (r *Runner) saveFullLogs(runID, jobID, stdout, stderr string) {
 	logDir := filepath.Join(r.historyDir, jobID)
-	os.MkdirAll(logDir, 0755)
+	os.MkdirAll(logDir, 0o755)
 
 	// Save stdout
 	if stdout != "" {
 		stdoutPath := filepath.Join(logDir, fmt.Sprintf("%s.stdout.log", runID))
-		if err := os.WriteFile(stdoutPath, []byte(stdout), 0644); err != nil {
+		if err := os.WriteFile(stdoutPath, []byte(stdout), 0o644); err != nil {
 			r.logger.Error("failed to save stdout", "run_id", runID, "error", err)
 		}
 	}
@@ -277,7 +277,7 @@ func (r *Runner) saveFullLogs(runID, jobID, stdout, stderr string) {
 	// Save stderr
 	if stderr != "" {
 		stderrPath := filepath.Join(logDir, fmt.Sprintf("%s.stderr.log", runID))
-		if err := os.WriteFile(stderrPath, []byte(stderr), 0644); err != nil {
+		if err := os.WriteFile(stderrPath, []byte(stderr), 0o644); err != nil {
 			r.logger.Error("failed to save stderr", "run_id", runID, "error", err)
 		}
 	}

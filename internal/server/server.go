@@ -43,8 +43,8 @@ type Server struct {
 	router    *http.ServeMux
 	startTime time.Time
 
-	mu       sync.RWMutex
-	started  bool
+	mu      sync.RWMutex
+	started bool
 }
 
 // New creates a new Server instance

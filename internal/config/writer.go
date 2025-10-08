@@ -25,13 +25,13 @@ func SaveConfig(cfg *Config, path string) error {
 
 	// Ensure parent directory exists
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	// Atomic write: write to temp file, then rename
 	tempPath := path + ".tmp"
-	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+	if err := os.WriteFile(tempPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write temp file: %w", err)
 	}
 

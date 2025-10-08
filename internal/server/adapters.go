@@ -175,4 +175,3 @@ func (a *SchedulerAdapter) GetJob(ctx context.Context, jobID string) (*JobSummar
 
 	return summary, nil
 }
-

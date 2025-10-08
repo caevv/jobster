@@ -23,7 +23,7 @@ type BoltStore struct {
 
 // NewBoltStore creates a new BoltDB-backed store at the given path.
 func NewBoltStore(path string) (Store, error) {
-	db, err := bolt.Open(path, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	db, err := bolt.Open(path, 0o600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open boltdb at %s: %w", path, err)
 	}
@@ -119,7 +119,6 @@ func (s *BoltStore) GetRun(runID string) (*JobRun, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +158,6 @@ func (s *BoltStore) GetJobRuns(jobID string, limit int) ([]*JobRun, error) {
 
 		return err
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +205,6 @@ func (s *BoltStore) GetAllRuns(limit int) ([]*JobRun, error) {
 			})
 		})
 	})
-
 	if err != nil {
 		return nil, err
 	}
