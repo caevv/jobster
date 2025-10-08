@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/caevv/jobster/compare/v1.1.1...v1.1.2) (2025-10-08)
+
+
+### Bug Fixes
+
+* **ci:** use correct output names with underscores ([bc65e4b](https://github.com/caevv/jobster/commit/bc65e4b8ca0afebcc0d82d59ba02fa9e43938dd5))
+
 ## [1.1.1](https://github.com/caevv/jobster/compare/v1.1.0...v1.1.1) (2025-10-08)
 
 
