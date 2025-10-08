@@ -32,6 +32,7 @@ go.work
 *.db
 *.jobster.db
 *.jobster.json
+.jobster-*.json
 .jobster/
 .test.json
 
