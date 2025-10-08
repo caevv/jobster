@@ -143,7 +143,7 @@ func (r *Runner) RunJob(ctx context.Context, job *config.Job) error {
 		run.Metadata["status"] = "failed"
 		run.Metadata["error"] = errorMsg
 
-		logger.Error("job execution failed",
+		r.logger.Error("job execution failed",
 			"job_id", job.ID,
 			"run_id", runID,
 			"exit_code", exitCode,
@@ -152,43 +152,43 @@ func (r *Runner) RunJob(ctx context.Context, job *config.Job) error {
 
 		// Execute on_error hooks
 		if len(job.Hooks.OnError) > 0 {
-			logger.Debug("executing on_error hooks", "job_id", job.ID, "run_id", runID, "count", len(job.Hooks.OnError))
+			r.logger.Debug("executing on_error hooks", "job_id", job.ID, "run_id", runID, "count", len(job.Hooks.OnError))
 			hookParams.Hook = "on_error"
 			if err := plugins.ExecuteHooks(ctx, r.pluginMgr, job.Hooks.OnError, hookParams, r.defaults.FailOnAgentError); err != nil {
-				logger.Error("on_error hook failed", "job_id", job.ID, "run_id", runID, "error", err)
+				r.logger.Error("on_error hook failed", "job_id", job.ID, "run_id", runID, "error", err)
 			}
 		}
 	} else {
 		run.Success = true
 		run.Metadata["status"] = "success"
 
-		logger.Info("job execution succeeded",
+		r.logger.Info("job execution succeeded",
 			"job_id", job.ID,
 			"run_id", runID,
 			"duration", duration)
 
 		// Execute on_success hooks
 		if len(job.Hooks.OnSuccess) > 0 {
-			logger.Debug("executing on_success hooks", "job_id", job.ID, "run_id", runID, "count", len(job.Hooks.OnSuccess))
+			r.logger.Debug("executing on_success hooks", "job_id", job.ID, "run_id", runID, "count", len(job.Hooks.OnSuccess))
 			hookParams.Hook = "on_success"
 			if err := plugins.ExecuteHooks(ctx, r.pluginMgr, job.Hooks.OnSuccess, hookParams, r.defaults.FailOnAgentError); err != nil {
-				logger.Error("on_success hook failed", "job_id", job.ID, "run_id", runID, "error", err)
+				r.logger.Error("on_success hook failed", "job_id", job.ID, "run_id", runID, "error", err)
 			}
 		}
 	}
 
 	// Execute post_run hooks (always run, regardless of job status)
 	if len(job.Hooks.PostRun) > 0 {
-		logger.Debug("executing post_run hooks", "job_id", job.ID, "run_id", runID, "count", len(job.Hooks.PostRun))
+		r.logger.Debug("executing post_run hooks", "job_id", job.ID, "run_id", runID, "count", len(job.Hooks.PostRun))
 		hookParams.Hook = "post_run"
 		if err := plugins.ExecuteHooks(ctx, r.pluginMgr, job.Hooks.PostRun, hookParams, r.defaults.FailOnAgentError); err != nil {
-			logger.Error("post_run hook failed", "job_id", job.ID, "run_id", runID, "error", err)
+			r.logger.Error("post_run hook failed", "job_id", job.ID, "run_id", runID, "error", err)
 		}
 	}
 
 	// Save final run state
 	if err := r.store.SaveRun(run); err != nil {
-		logger.Error("failed to save run", "run_id", runID, "error", err)
+		r.logger.Error("failed to save run", "run_id", runID, "error", err)
 	}
 
 	if execErr != nil {
@@ -270,7 +270,7 @@ func (r *Runner) saveFullLogs(runID, jobID, stdout, stderr string) {
 	if stdout != "" {
 		stdoutPath := filepath.Join(logDir, fmt.Sprintf("%s.stdout.log", runID))
 		if err := os.WriteFile(stdoutPath, []byte(stdout), 0644); err != nil {
-			logger.Error("failed to save stdout", "run_id", runID, "error", err)
+			r.logger.Error("failed to save stdout", "run_id", runID, "error", err)
 		}
 	}
 
@@ -278,7 +278,7 @@ func (r *Runner) saveFullLogs(runID, jobID, stdout, stderr string) {
 	if stderr != "" {
 		stderrPath := filepath.Join(logDir, fmt.Sprintf("%s.stderr.log", runID))
 		if err := os.WriteFile(stderrPath, []byte(stderr), 0644); err != nil {
-			logger.Error("failed to save stderr", "run_id", runID, "error", err)
+			r.logger.Error("failed to save stderr", "run_id", runID, "error", err)
 		}
 	}
 }

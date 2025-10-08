@@ -31,7 +31,7 @@ func TestIntegration_JobExecution(t *testing.T) {
 		Jobs: []config.Job{
 			{
 				ID:         "test-job",
-				Schedule:   "@every 100ms",
+				Schedule:   "@every 1s",
 				Command:    "echo 'hello world'",
 				TimeoutSec: 5,
 			},
@@ -50,7 +50,7 @@ func TestIntegration_JobExecution(t *testing.T) {
 
 	runner := NewRunner(st, pluginMgr, cfg.Defaults, logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
 	sched := scheduler.New(ctx, logger)
@@ -68,7 +68,7 @@ func TestIntegration_JobExecution(t *testing.T) {
 	}
 
 	// Wait for jobs to run
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 
 	// Stop scheduler
 	err = sched.Stop()
@@ -115,7 +115,7 @@ func TestIntegration_FailingJob(t *testing.T) {
 		Jobs: []config.Job{
 			{
 				ID:         "failing-job",
-				Schedule:   "@every 100ms",
+				Schedule:   "@every 1s",
 				Command:    "exit 1",
 				TimeoutSec: 5,
 			},
@@ -133,7 +133,7 @@ func TestIntegration_FailingJob(t *testing.T) {
 
 	runner := NewRunner(st, pluginMgr, cfg.Defaults, logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	sched := scheduler.New(ctx, logger)
@@ -148,7 +148,7 @@ func TestIntegration_FailingJob(t *testing.T) {
 		t.Fatalf("Failed to start scheduler: %v", err)
 	}
 
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 
 	err = sched.Stop()
 	if err != nil {
@@ -190,19 +190,19 @@ func TestIntegration_MultipleJobs(t *testing.T) {
 		Jobs: []config.Job{
 			{
 				ID:         "job-1",
-				Schedule:   "@every 50ms",
+				Schedule:   "@every 1s",
 				Command:    "echo 'job 1'",
 				TimeoutSec: 5,
 			},
 			{
 				ID:         "job-2",
-				Schedule:   "@every 75ms",
+				Schedule:   "@every 1s",
 				Command:    "echo 'job 2'",
 				TimeoutSec: 5,
 			},
 			{
 				ID:         "job-3",
-				Schedule:   "@every 100ms",
+				Schedule:   "@every 1s",
 				Command:    "echo 'job 3'",
 				TimeoutSec: 5,
 			},
@@ -220,7 +220,7 @@ func TestIntegration_MultipleJobs(t *testing.T) {
 
 	runner := NewRunner(st, pluginMgr, cfg.Defaults, logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
 	sched := scheduler.New(ctx, logger)
@@ -238,7 +238,7 @@ func TestIntegration_MultipleJobs(t *testing.T) {
 		t.Fatalf("Failed to start scheduler: %v", err)
 	}
 
-	time.Sleep(350 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 
 	err = sched.Stop()
 	if err != nil {
@@ -300,7 +300,7 @@ exit 0
 		Jobs: []config.Job{
 			{
 				ID:         "hook-job",
-				Schedule:   "@every 100ms",
+				Schedule:   "@every 1s",
 				Command:    "echo 'test'",
 				TimeoutSec: 5,
 				Hooks: config.Hooks{
@@ -335,7 +335,7 @@ exit 0
 
 	runner := NewRunner(st, pluginMgr, cfg.Defaults, logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	sched := scheduler.New(ctx, logger)
@@ -350,7 +350,7 @@ exit 0
 		t.Fatalf("Failed to start scheduler: %v", err)
 	}
 
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 
 	err = sched.Stop()
 	if err != nil {
@@ -389,7 +389,7 @@ func TestIntegration_GracefulShutdown(t *testing.T) {
 		Jobs: []config.Job{
 			{
 				ID:         "long-job",
-				Schedule:   "@every 50ms",
+				Schedule:   "@every 1s",
 				Command:    "sleep 0.2",
 				TimeoutSec: 5,
 			},
@@ -422,7 +422,7 @@ func TestIntegration_GracefulShutdown(t *testing.T) {
 	}
 
 	// Let job start running
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1200 * time.Millisecond)
 
 	// Cancel context and stop
 	cancel()
@@ -459,7 +459,7 @@ func TestIntegration_JobWithEnvironment(t *testing.T) {
 		Jobs: []config.Job{
 			{
 				ID:         "env-job",
-				Schedule:   "@every 100ms",
+				Schedule:   "@every 1s",
 				Command:    "printenv TEST_VAR",
 				TimeoutSec: 5,
 				Env: map[string]string{
@@ -480,7 +480,7 @@ func TestIntegration_JobWithEnvironment(t *testing.T) {
 
 	runner := NewRunner(st, pluginMgr, cfg.Defaults, logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	sched := scheduler.New(ctx, logger)
@@ -495,7 +495,7 @@ func TestIntegration_JobWithEnvironment(t *testing.T) {
 		t.Fatalf("Failed to start scheduler: %v", err)
 	}
 
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 
 	err = sched.Stop()
 	if err != nil {

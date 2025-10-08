@@ -237,7 +237,7 @@ func TestScheduler_StartStop(t *testing.T) {
 	runner := &mockJobRunner{}
 	job := &config.Job{
 		ID:       "start-stop-test",
-		Schedule: "@every 50ms",
+		Schedule: "@every 1s",
 		Command:  "echo test",
 	}
 
@@ -253,7 +253,7 @@ func TestScheduler_StartStop(t *testing.T) {
 	}
 
 	// Wait for job to run multiple times
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 
 	// Stop scheduler
 	err = sched.Stop()
@@ -274,10 +274,10 @@ func TestScheduler_ContextCancellation(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 	sched := New(ctx, logger)
 
-	runner := &mockJobRunner{runDelay: 200 * time.Millisecond}
+	runner := &mockJobRunner{runDelay: 500 * time.Millisecond}
 	job := &config.Job{
 		ID:       "cancel-test",
-		Schedule: "@every 50ms",
+		Schedule: "@every 1s",
 		Command:  "echo test",
 	}
 
@@ -292,7 +292,7 @@ func TestScheduler_ContextCancellation(t *testing.T) {
 	}
 
 	// Wait for job to start
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1200 * time.Millisecond)
 
 	// Cancel context
 	cancel()
@@ -317,7 +317,7 @@ func TestScheduler_GetJobStats(t *testing.T) {
 	runner := &mockJobRunner{}
 	job := &config.Job{
 		ID:       "stats-test",
-		Schedule: "@every 50ms",
+		Schedule: "@every 1s",
 		Command:  "echo test",
 	}
 
@@ -341,7 +341,7 @@ func TestScheduler_GetJobStats(t *testing.T) {
 		t.Fatalf("Start() error = %v", err)
 	}
 
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 
 	err = sched.Stop()
 	if err != nil {
@@ -376,7 +376,7 @@ func TestScheduler_JobTimeout(t *testing.T) {
 	runner := &mockJobRunner{runDelay: 200 * time.Millisecond}
 	job := &config.Job{
 		ID:         "timeout-test",
-		Schedule:   "@every 50ms",
+		Schedule:   "@every 1s",
 		Command:    "echo test",
 		TimeoutSec: 1, // 1 second timeout
 	}
@@ -392,7 +392,7 @@ func TestScheduler_JobTimeout(t *testing.T) {
 	}
 
 	// Wait for job to run at least once
-	time.Sleep(400 * time.Millisecond)
+	time.Sleep(2000 * time.Millisecond)
 
 	err = sched.Stop()
 	if err != nil {

@@ -382,7 +382,7 @@ func TestValidateSchedule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateSchedule(tt.schedule)
+			err := ValidateSchedule(tt.schedule)
 			if tt.wantError && err == nil {
 				t.Error("expected error, got nil")
 			}
