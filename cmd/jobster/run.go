@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/caevv/jobster/internal/config"
+	"github.com/caevv/jobster/internal/logging"
 	"github.com/caevv/jobster/internal/plugins"
 	"github.com/caevv/jobster/internal/scheduler"
 	"github.com/caevv/jobster/internal/store"
@@ -32,14 +34,23 @@ func init() {
 func runScheduler(cmd *cobra.Command, args []string) error {
 	configPath, _ := cmd.Flags().GetString("config")
 
-	logger.Info("starting jobster in run mode", "config", configPath)
-
 	// Load configuration
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
+	// Apply logging config from YAML if provided
+	if cfg.Logging.Output != "" || cfg.Logging.Level != "" || cfg.Logging.Format != "" {
+		runLogger, err := logging.NewFromConfig(cfg.Logging.Format, cfg.Logging.Level, cfg.Logging.Output)
+		if err != nil {
+			return fmt.Errorf("failed to initialize logger: %w", err)
+		}
+		logger = runLogger
+		slog.SetDefault(runLogger)
+	}
+
+	logger.Info("starting jobster in run mode", "config", configPath)
 	logger.Info("configuration loaded successfully",
 		"jobs", len(cfg.Jobs),
 		"timezone", cfg.Defaults.Timezone,

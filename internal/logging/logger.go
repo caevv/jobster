@@ -93,3 +93,54 @@ func WithFields(logger *slog.Logger, fields map[string]any) *slog.Logger {
 	}
 	return logger.With(args...)
 }
+
+// NewFromConfig creates a logger based on configuration settings.
+// Supports format (json/text), level (debug/info/warn/error), and output (file path or stderr).
+func NewFromConfig(format, level, output string) (*slog.Logger, error) {
+	// Determine log level
+	var logLevel slog.Level
+	switch strings.ToLower(level) {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "info", "":
+		logLevel = slog.LevelInfo
+	case "warn", "warning":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
+	}
+
+	// Determine output writer
+	var writer io.Writer
+	if output == "" || output == "stderr" {
+		writer = os.Stderr
+	} else if output == "stdout" {
+		writer = os.Stdout
+	} else if output == "discard" || output == "/dev/null" {
+		writer = io.Discard
+	} else {
+		// Open file for writing
+		f, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err != nil {
+			return nil, err
+		}
+		writer = f
+	}
+
+	opts := &slog.HandlerOptions{
+		Level:       logLevel,
+		ReplaceAttr: redactSecrets,
+	}
+
+	// Create handler based on format
+	var handler slog.Handler
+	if strings.ToLower(format) == "text" {
+		handler = slog.NewTextHandler(writer, opts)
+	} else {
+		handler = slog.NewJSONHandler(writer, opts)
+	}
+
+	return slog.New(handler), nil
+}
