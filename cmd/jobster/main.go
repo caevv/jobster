@@ -71,6 +71,7 @@ func init() {
 	// Register subcommands
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(serveCmd)
+	rootCmd.AddCommand(tuiCmd)
 	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(jobCmd)
 }

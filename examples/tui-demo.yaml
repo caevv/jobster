@@ -1,0 +1,45 @@
+# TUI Demo Configuration
+# A simple configuration to demonstrate the terminal UI
+
+# Logging configuration (optional)
+# In TUI mode, logs are suppressed by default to avoid cluttering the interface
+# Uncomment to log to a file:
+# logging:
+#   level: "info"        # debug, info, warn, error
+#   format: "json"       # json or text
+#   output: "/tmp/jobster.log"  # file path, or "stderr", "stdout", "discard"
+
+store:
+  driver: "json"
+  path: "./.jobster-tui-demo.json"
+
+jobs:
+  # Quick task that runs every 30 seconds
+  - id: "quick-check"
+    schedule: "@every 30s"
+    command: ["/bin/echo", "Quick check complete"]
+    timeout_sec: 5
+
+  # Task that runs every minute
+  - id: "minute-task"
+    schedule: "@every 1m"
+    command: ["/bin/date"]
+    timeout_sec: 10
+
+  # Task that runs every 2 minutes (demonstrates longer duration)
+  - id: "slow-task"
+    schedule: "@every 5s"
+    command:
+      - "/bin/sh"
+      - "-c"
+      - "sleep 2; echo Slow task complete"
+    timeout_sec: 30
+
+  # Task that simulates occasional failures (50% fail rate)
+  - id: "flaky-task"
+    schedule: "@every 5s"
+    command:
+      - "/bin/sh"
+      - "-c"
+      - "if [ $(( $(date +%s) % 2 )) -eq 0 ]; then echo Success; else echo Failed >&2; exit 1; fi"
+    timeout_sec: 5
