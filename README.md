@@ -2,6 +2,8 @@
 
 A lightweight, plugin-based cron job runner written in Go. Define jobs in YAML, run with minimal setup, and extend via simple plugins.
 
+[![CI](https://github.com/caevv/jobster/actions/workflows/ci.yml/badge.svg)](https://github.com/caevv/jobster/actions/workflows/ci.yml)
+[![Release](https://github.com/caevv/jobster/actions/workflows/release.yml/badge.svg)](https://github.com/caevv/jobster/actions/workflows/release.yml)
 [![Go Version](https://img.shields.io/badge/go-1.25-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
@@ -510,15 +512,63 @@ See the [agents/](agents/) directory for example plugins:
 
 ## Contributing
 
-Contributions are welcome! Please:
+Contributions are welcome! Please follow these guidelines:
+
+### Development Workflow
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Make your changes with proper tests
+4. Run linting and tests: `make lint test`
+5. Commit your changes using [Conventional Commits](#commit-message-format)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
-See [AGENTS.md](AGENTS.md) for detailed development guidelines.
+### Commit Message Format
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and changelog generation.
+
+**Format:** `<type>(<scope>): <description>`
+
+**Types:**
+- `feat:` - New feature (triggers minor version bump)
+- `fix:` - Bug fix (triggers patch version bump)
+- `docs:` - Documentation changes
+- `chore:` - Maintenance tasks (dependencies, build, etc.)
+- `refactor:` - Code refactoring without behavior changes
+- `test:` - Adding or updating tests
+- `perf:` - Performance improvements
+
+**Examples:**
+```
+feat(scheduler): add support for timezone-aware cron schedules
+fix(plugins): resolve race condition in agent execution
+docs(readme): update installation instructions
+chore(deps): upgrade robfig/cron to v3.0.1
+```
+
+**Breaking Changes:** Add `BREAKING CHANGE:` in the commit body or use `!` after type (e.g., `feat!: ...`) to trigger a major version bump.
+
+### Local Development
+
+```bash
+# Install dependencies
+go mod download
+
+# Run tests
+make test
+
+# Run linting
+make lint
+
+# Build binary
+make build
+
+# Format code
+make fmt
+```
+
+See [AGENTS.md](AGENTS.md) for detailed development guidelines and [Makefile](Makefile) for all available commands.
 
 ## License
 

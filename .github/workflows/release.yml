@@ -1,0 +1,126 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  # Semantic Release determines if we need a release
+  semantic-release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    outputs:
+      new-release-published: ${{ steps.semantic.outputs.new-release-published }}
+      new-release-version: ${{ steps.semantic.outputs.new-release-version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install semantic-release
+        run: |
+          npm install -g \
+            semantic-release@latest \
+            @semantic-release/changelog@latest \
+            @semantic-release/git@latest \
+            @semantic-release/github@latest
+
+      - name: Run semantic-release
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+  # Build binaries only if semantic-release created a new release
+  build:
+    name: Build Release Binaries
+    needs: semantic-release
+    if: needs.semantic-release.outputs.new-release-published == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: v${{ needs.semantic-release.outputs.new-release-version }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          VERSION: v${{ needs.semantic-release.outputs.new-release-version }}
+        run: |
+          COMMIT=$(git rev-parse --short HEAD)
+          BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+
+          go build -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
+            -o jobster-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/jobster
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobster-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: jobster-${{ matrix.goos }}-${{ matrix.goarch }}
+
+  # Upload binaries to the release created by semantic-release
+  upload-assets:
+    name: Upload Release Assets
+    needs: [semantic-release, build]
+    if: needs.semantic-release.outputs.new-release-published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          find artifacts -type f -name "jobster-*" -exec mv {} release/ \;
+          cp systemd/*.service release/
+          cp scripts/*.sh release/
+
+          # Generate checksums
+          cd release
+          sha256sum jobster-* *.service *.sh > SHA256SUMS
+
+      - name: Upload assets to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v${{ needs.semantic-release.outputs.new-release-version }} \
+            release/* \
+            --clobber
