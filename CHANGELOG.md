@@ -1,3 +1,17 @@
+# [1.1.0](https://github.com/caevv/jobster/compare/v1.0.0...v1.1.0) (2025-10-08)
+
+
+### Bug Fixes
+
+* **config:** use array storage for proper command execution ([88dfd7d](https://github.com/caevv/jobster/commit/88dfd7dc9e893ce467a5aeae856f844613352ae7))
+
+
+### Features
+
+* **config:** support array format for job commands ([7f74318](https://github.com/caevv/jobster/commit/7f7431816385679c8c07d9d8f76f8dfd0aa72b43))
+* **logging:** add config-based logger initialization ([b492952](https://github.com/caevv/jobster/commit/b492952e25bbaf85fb2995cc0174bc6940090d13))
+* **tui:** add interactive terminal dashboard ([5a1fe89](https://github.com/caevv/jobster/commit/5a1fe8987d85e9dec61630b9f090a748a37c6572))
+
 # 1.0.0 (2025-10-08)
 
 
