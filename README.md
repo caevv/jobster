@@ -193,6 +193,12 @@ defaults:
   job_retries: 3                # Retry failed jobs
   job_backoff_strategy: "exponential"
 
+# Logging configuration (optional)
+logging:
+  level: "info"                 # debug, info, warn, error
+  format: "json"                # json or text
+  output: "/var/log/jobster.log"  # file path, "stderr", "stdout", or "discard"
+
 # Where to store job history
 store:
   driver: "bbolt"               # "bbolt" (recommended) or "json"
@@ -248,12 +254,38 @@ jobster job add my-job \
 # Run in foreground (no dashboard)
 jobster run --config jobster.yaml
 
+# Run with terminal UI dashboard (interactive)
+jobster tui --config jobster.yaml
+
 # Run with web dashboard
 jobster serve --config jobster.yaml --addr :8080
 
 # Validate configuration
 jobster validate --config jobster.yaml
 ```
+
+### Terminal UI Dashboard
+
+Run Jobster with a beautiful, interactive terminal dashboard:
+
+```bash
+jobster tui --config jobster.yaml
+```
+
+**Features:**
+- 🎨 **Beautiful interface** - Modern, colorful terminal UI
+- ⚡ **Real-time updates** - Live job status and run history
+- 🎯 **Interactive navigation** - Keyboard controls (↑/↓, j/k)
+- 📊 **Stats at a glance** - Success rates, running jobs, recent runs
+
+**Keyboard shortcuts:**
+- `↑/↓` or `j/k` - Navigate job list
+- `enter` - View job details (history, logs, stats)
+- `esc` - Go back to job list
+- `g` - Jump to top
+- `G` - Jump to bottom
+- `r` - Refresh data
+- `q` - Quit
 
 ### Web Dashboard
 

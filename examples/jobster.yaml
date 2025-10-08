@@ -8,6 +8,12 @@ defaults:
   job_retries: 3
   job_backoff_strategy: "exponential"
 
+# Logging configuration (optional)
+logging:
+  level: "info" # debug, info, warn, error
+  format: "json" # json or text
+  output: "stderr" # file path, "stderr", "stdout", or "discard"
+
 store:
   driver: "bbolt"
   path: "./.jobster.db"

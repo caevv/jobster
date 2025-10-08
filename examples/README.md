@@ -5,7 +5,9 @@ This directory contains example configuration files for Jobster.
 ## Available Examples
 
 ### 1. `jobster.yaml` - Full-featured example
+
 Demonstrates the complete Jobster configuration schema with:
+
 - Multiple jobs with different schedules
 - Various hook types (pre_run, post_run, on_success, on_error)
 - Environment variables
@@ -22,7 +24,9 @@ Demonstrates the complete Jobster configuration schema with:
 ```
 
 ### 2. `minimal.yaml` - Minimal setup
+
 The simplest possible Jobster configuration with:
+
 - Two basic jobs
 - JSON file storage (lightweight)
 - No hooks or complex features
@@ -35,7 +39,9 @@ The simplest possible Jobster configuration with:
 ```
 
 ### 3. `hooks-demo.yaml` - Hook demonstration
+
 Comprehensive example showing all hook types:
+
 - `pre_run` - Executes before job starts
 - `post_run` - Executes after job finishes (always)
 - `on_success` - Executes only on successful completion
@@ -53,12 +59,12 @@ Comprehensive example showing all hook types:
 
 ```yaml
 store:
-  driver: "bbolt"  # or "json"
+  driver: "bbolt" # or "json"
   path: "./jobster.db"
 
 jobs:
   - id: "unique-job-id"
-    schedule: "0 2 * * *"  # cron expression
+    schedule: "0 2 * * *" # cron expression
     command: "/path/to/command"
 ```
 
@@ -66,7 +72,7 @@ jobs:
 
 ```yaml
 defaults:
-  timezone: "America/New_York"  # Optional - defaults to system timezone
+  timezone: "America/New_York" # Optional - defaults to system timezone
   agent_timeout_sec: 10
   fail_on_agent_error: false
   job_retries: 3
@@ -96,21 +102,27 @@ jobs:
 Jobster supports multiple schedule formats:
 
 ### Cron Expressions
+
 Standard 5-field cron syntax:
+
 - `"0 2 * * *"` - Daily at 2:00 AM
 - `"*/15 * * * *"` - Every 15 minutes
 - `"0 */6 * * *"` - Every 6 hours
 - `"0 9 * * MON"` - Every Monday at 9:00 AM
 
 ### Descriptors
+
 Convenient shortcuts:
+
 - `"@hourly"` - Every hour
 - `"@daily"` - Every day at midnight
 - `"@weekly"` - Every Sunday at midnight
 - `"@monthly"` - First day of month at midnight
 
 ### Intervals
+
 Human-readable intervals:
+
 - `"@every 5m"` - Every 5 minutes
 - `"@every 2h"` - Every 2 hours
 - `"@every 30s"` - Every 30 seconds
@@ -119,22 +131,26 @@ Human-readable intervals:
 ## Storage Drivers
 
 ### BoltDB (Recommended for production)
+
 ```yaml
 store:
   driver: "bbolt"
   path: "./.jobster.db"
 ```
+
 - Embedded key-value database
 - ACID transactions
 - Good performance
 - Single file storage
 
 ### JSON (Recommended for development)
+
 ```yaml
 store:
   driver: "json"
   path: "./.jobster.json"
 ```
+
 - Simple JSON file
 - Human-readable
 - Good for testing
@@ -151,6 +167,7 @@ Validate your configuration file before running:
 ## Creating Custom Agents
 
 See the `/agents` directory for example agent scripts. Agents must:
+
 1. Be executable
 2. Read `CONFIG_JSON` from environment
 3. Output valid JSON to stdout
@@ -176,6 +193,7 @@ echo '{"status":"ok","metrics":{"processed":1}}'
 ## Common Patterns
 
 ### Database Backups with Notification
+
 ```yaml
 jobs:
   - id: "db-backup"
@@ -191,6 +209,7 @@ jobs:
 ```
 
 ### Periodic Health Checks
+
 ```yaml
 jobs:
   - id: "health-check"
@@ -204,6 +223,7 @@ jobs:
 ```
 
 ### Cleanup Jobs
+
 ```yaml
 jobs:
   - id: "cleanup"
