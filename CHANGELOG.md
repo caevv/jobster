@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/caevv/jobster/compare/v1.1.2...v1.2.0) (2026-06-01)
+
+
+### Features
+
+* **scheduler:** add job retry support and timezone-aware overlap detection ([eec3538](https://github.com/caevv/jobster/commit/eec353894b06401ce524481fa9829d876e070a18))
+
 ## [1.1.2](https://github.com/caevv/jobster/compare/v1.1.1...v1.1.2) (2025-10-08)
 
 
