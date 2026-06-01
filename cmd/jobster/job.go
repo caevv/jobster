@@ -194,7 +194,8 @@ func runListJobs(cmd *cobra.Command, args []string) error {
 		if workdir == "" {
 			workdir = "."
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%ds\n",
+		fmt.Fprintf(
+			w, "%s\t%s\t%s\t%s\t%ds\n",
 			job.ID,
 			job.Schedule,
 			truncate(job.Command.String(), 40),

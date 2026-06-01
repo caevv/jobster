@@ -13,13 +13,14 @@ import (
 
 // Scheduler wraps robfig/cron and manages job lifecycle with context support.
 type Scheduler struct {
-	cron   *cron.Cron
-	ctx    context.Context
-	cancel context.CancelFunc
-	logger *slog.Logger
-	jobs   map[string]*scheduledJob // jobID -> scheduledJob
-	mu     sync.RWMutex
-	wg     sync.WaitGroup
+	cron          *cron.Cron
+	ctx           context.Context
+	cancel        context.CancelFunc
+	logger        *slog.Logger
+	jobs          map[string]*scheduledJob // jobID -> scheduledJob
+	shutdownGrace time.Duration
+	mu            sync.RWMutex
+	wg            sync.WaitGroup
 }
 
 // scheduledJob tracks a job and its cron entry.
@@ -32,11 +33,49 @@ type scheduledJob struct {
 	runCount int64
 }
 
+// Option configures a Scheduler at construction time.
+type Option func(*options)
+
+// options holds optional Scheduler configuration accumulated from Option values.
+type options struct {
+	location      *time.Location
+	shutdownGrace time.Duration
+}
+
+// WithLocation sets the time zone used to interpret cron schedules. When unset
+// (or nil), cron expressions are interpreted in the server's local time.
+//
+// Note: this only affects cron-expression schedules (e.g. "0 2 * * *"). Interval
+// schedules ("@every 5m") are absolute durations and are unaffected by time zone.
+func WithLocation(loc *time.Location) Option {
+	return func(o *options) {
+		if loc != nil {
+			o.location = loc
+		}
+	}
+}
+
+// WithShutdownGracePeriod overrides how long Stop lets an in-flight job keep
+// running before forcibly cancelling it. A non-positive value is ignored and the
+// default (shutdownGracePeriod) is used.
+func WithShutdownGracePeriod(d time.Duration) Option {
+	return func(o *options) {
+		if d > 0 {
+			o.shutdownGrace = d
+		}
+	}
+}
+
 // New creates a new Scheduler instance with context support.
 // The context is used for graceful shutdown and job cancellation.
-func New(ctx context.Context, logger *slog.Logger) *Scheduler {
+func New(ctx context.Context, logger *slog.Logger, opts ...Option) *Scheduler {
 	if logger == nil {
 		logger = slog.Default()
+	}
+
+	o := options{shutdownGrace: shutdownGracePeriod}
+	for _, opt := range opts {
+		opt(&o)
 	}
 
 	schedCtx, cancel := context.WithCancel(ctx)
@@ -44,19 +83,26 @@ func New(ctx context.Context, logger *slog.Logger) *Scheduler {
 	// Create cron with custom logger that wraps slog
 	cronLogger := &cronSlogAdapter{logger: logger}
 
-	c := cron.New(
+	cronOpts := []cron.Option{
 		cron.WithLogger(cronLogger),
 		cron.WithChain(
-			cron.Recover(cronLogger), // Recover from panics
+			cron.Recover(cronLogger),            // Recover from panics
+			cron.SkipIfStillRunning(cronLogger), // Skip a tick if the previous run is still in flight
 		),
-	)
+	}
+	if o.location != nil {
+		cronOpts = append(cronOpts, cron.WithLocation(o.location))
+	}
+
+	c := cron.New(cronOpts...)
 
 	return &Scheduler{
-		cron:   c,
-		ctx:    schedCtx,
-		cancel: cancel,
-		logger: logger,
-		jobs:   make(map[string]*scheduledJob),
+		cron:          c,
+		ctx:           schedCtx,
+		cancel:        cancel,
+		logger:        logger,
+		jobs:          make(map[string]*scheduledJob),
+		shutdownGrace: o.shutdownGrace,
 	}
 }
 
@@ -102,7 +148,8 @@ func (s *Scheduler) AddJob(job *config.Job, runner JobRunner) error {
 		nextRun: schedule.Next(time.Now()),
 	}
 
-	s.logger.Info("job added to scheduler",
+	s.logger.Info(
+		"job added to scheduler",
 		slog.String("job_id", job.ID),
 		slog.String("schedule", job.Schedule),
 		slog.Time("next_run", schedule.Next(time.Now())),
@@ -127,15 +174,14 @@ func (s *Scheduler) wrapJob(job *config.Job, runner JobRunner) cron.FuncJob {
 		s.wg.Add(1)
 		defer s.wg.Done()
 
-		// Create job-specific context with timeout if configured
+		// Pass the scheduler lifecycle context straight through. The per-attempt
+		// timeout (job.TimeoutSec) is enforced by the runner on each command
+		// execution, so the whole retry sequence is not capped by a single
+		// timeout. Cancelling s.ctx (graceful shutdown) still aborts in-flight work.
 		jobCtx := s.ctx
-		if job.TimeoutSec > 0 {
-			var cancel context.CancelFunc
-			jobCtx, cancel = context.WithTimeout(s.ctx, time.Duration(job.TimeoutSec)*time.Second)
-			defer cancel()
-		}
 
-		s.logger.Info("starting job execution",
+		s.logger.Info(
+			"starting job execution",
 			slog.String("job_id", job.ID),
 			slog.String("command", job.Command.String()),
 		)
@@ -145,13 +191,15 @@ func (s *Scheduler) wrapJob(job *config.Job, runner JobRunner) cron.FuncJob {
 		duration := time.Since(startTime)
 
 		if err != nil {
-			s.logger.Error("job execution failed",
+			s.logger.Error(
+				"job execution failed",
 				slog.String("job_id", job.ID),
 				slog.String("error", err.Error()),
 				slog.Duration("duration", duration),
 			)
 		} else {
-			s.logger.Info("job execution completed",
+			s.logger.Info(
+				"job execution completed",
 				slog.String("job_id", job.ID),
 				slog.Duration("duration", duration),
 			)
@@ -185,34 +233,50 @@ func (s *Scheduler) Start() error {
 	return nil
 }
 
-// Stop gracefully stops the scheduler and waits for all running jobs to complete.
-// It respects the parent context for timeout on shutdown.
+// shutdownGracePeriod bounds how long Stop lets an in-flight job keep running
+// before it forcibly cancels it. It gives a job that is mid-execution a chance
+// to finish normally, while ensuring shutdown cannot hang for the (potentially
+// multi-minute) duration of a job's retry backoff.
+const shutdownGracePeriod = 10 * time.Second
+
+// Stop gracefully stops the scheduler and waits for all running jobs to return.
+//
+// It stops scheduling new ticks, then lets any in-flight job finish normally for
+// up to shutdownGracePeriod. If a job is still running after that, its context is
+// cancelled (its command is killed and any pending retry backoff aborts) and Stop
+// waits for it to unwind. Either way Stop blocks until every job goroutine has
+// returned before it returns — that unconditional join is what makes Stop a safe
+// synchronization point: callers that read run history afterwards cannot race a
+// job goroutine that is still writing its record.
+//
+// When the context passed to New is already cancelled (e.g. a SIGINT/SIGTERM
+// signal handler cancelled it), in-flight jobs are already winding down, so the
+// grace branch resolves immediately.
 func (s *Scheduler) Stop() error {
 	s.logger.Info("stopping scheduler")
 
-	// Cancel the scheduler context to signal all jobs to stop
-	s.cancel()
-
-	// Stop accepting new jobs
+	// Stop scheduling new ticks. cron.Stop returns a context that completes only
+	// once every job function cron started has returned.
 	cronStopCtx := s.cron.Stop()
 
-	// Wait for cron to stop scheduling new executions
-	<-cronStopCtx.Done()
-
-	// Wait for all running jobs to complete
-	done := make(chan struct{})
-	go func() {
-		s.wg.Wait()
-		close(done)
-	}()
-
 	select {
-	case <-done:
-		s.logger.Info("all jobs stopped gracefully")
-	case <-s.ctx.Done():
-		s.logger.Warn("shutdown timeout reached, some jobs may have been terminated")
+	case <-cronStopCtx.Done():
+		// All in-flight jobs finished on their own within the grace period.
+	case <-time.After(s.shutdownGrace):
+		// A job is still running; cancel it and wait for it to unwind.
+		s.logger.Warn("grace period elapsed; cancelling in-flight jobs")
+		s.cancel()
+		<-cronStopCtx.Done()
 	}
 
+	// Belt-and-suspenders: also wait on our own WaitGroup so any wrapJob
+	// bookkeeping that runs after the runner returns is complete.
+	s.wg.Wait()
+
+	// Release the scheduler context now that every job has finished.
+	s.cancel()
+
+	s.logger.Info("all jobs stopped gracefully")
 	return nil
 }
 

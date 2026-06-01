@@ -58,7 +58,8 @@ func (m Model) renderStats() string {
 
 	if m.totalRuns > 0 {
 		successRate := float64(m.successRuns) / float64(m.totalRuns) * 100
-		stats = append(stats, fmt.Sprintf("%s %d/%d (%.0f%%)",
+		stats = append(stats, fmt.Sprintf(
+			"%s %d/%d (%.0f%%)",
 			keyStyle.Render("Success:"),
 			m.successRuns,
 			m.totalRuns,
@@ -147,7 +148,8 @@ func (m Model) renderJobRow(job JobState, selected bool) string {
 	nextRunDisplay := keyStyle.Render(nextRunStr)
 
 	// Build row with fixed spacing
-	row := fmt.Sprintf("%s  %-22s  %s  %s  %s",
+	row := fmt.Sprintf(
+		"%s  %-22s  %s  %s  %s",
 		cursor,
 		jobID,
 		statusDisplay,
@@ -216,7 +218,8 @@ func (m Model) renderRunItem(run *store.JobRun) string {
 	}
 
 	// Build row aligned with headers: Time (10), Job (22), Status (6), Duration
-	row := fmt.Sprintf("%s  %-10s  %-22s  %s      %s",
+	row := fmt.Sprintf(
+		"%s  %-10s  %-22s  %s      %s",
 		iconBullet,
 		timeStr,
 		jobIDStr,
@@ -249,7 +252,8 @@ func (m Model) renderDetailView() string {
 	// Header with job name - make it prominent
 	jobTitle := fmt.Sprintf("⚡ Jobster Dashboard - %s", job.ID)
 	lastUpdate := fmt.Sprintf("Last updated: %s", m.lastUpdate.Format("15:04:05"))
-	header := lipgloss.JoinHorizontal(lipgloss.Top,
+	header := lipgloss.JoinHorizontal(
+		lipgloss.Top,
 		titleStyle.Render(jobTitle),
 		"  ",
 		subtitleStyle.Render(lastUpdate),
@@ -336,7 +340,8 @@ func (m Model) renderDetailView() string {
 			durationDisplay := durationStyle.Render(padRight(durationStr, 12))
 
 			// Build row with proper spacing
-			row := fmt.Sprintf("  %-20s  %s        %-12s  %d",
+			row := fmt.Sprintf(
+				"  %-20s  %s        %-12s  %d",
 				timeStr,
 				statusDisplay,
 				durationDisplay,
@@ -392,7 +397,8 @@ func formatTimeFromNow(t time.Time) string {
 		return fmt.Sprintf("in %dm", int(duration.Minutes()))
 	}
 	if duration < 24*time.Hour {
-		return fmt.Sprintf("in %dh %dm",
+		return fmt.Sprintf(
+			"in %dh %dm",
 			int(duration.Hours()),
 			int(duration.Minutes())%60,
 		)

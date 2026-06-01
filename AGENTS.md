@@ -180,9 +180,10 @@ echo '{"status":"ok","metrics":{"notified":1}}'
 
 ## Reliability & performance
 
-* Graceful shutdown (SIGINT/SIGTERM) cancels in-flight jobs via context.
-* Backoff & retries for jobs and agents (linear/exp).
-* Time-zone aware scheduling; monotonic clock for intervals.
+* Graceful shutdown (SIGINT/SIGTERM) cancels in-flight jobs via context, then waits for them to return.
+* Backoff & retries for jobs (`defaults.job_retries` + `defaults.job_backoff_strategy`: `linear` or `exponential`). `job_retries: N` means up to `N+1` attempts; `timeout_sec` applies per attempt. Retry backoff aborts on shutdown.
+* Overlap prevention: a scheduled tick is **skipped** if the previous run of the same job is still in flight (no piled-up concurrent executions).
+* Time-zone aware scheduling (`defaults.timezone`, IANA names via embedded tzdata) for cron expressions; interval schedules (`@every`/`every 5m`) are absolute durations.
 * Large schedules: shard by hash of `job_id` to avoid thundering herd.
 
 ---

@@ -83,8 +83,14 @@ func runScheduler(cmd *cobra.Command, args []string) error {
 	// Setup signal handling for graceful shutdown
 	ctx := setupSignalHandler()
 
+	// Resolve the configured timezone for cron schedules
+	loc, err := resolveLocation(cfg)
+	if err != nil {
+		return err
+	}
+
 	// Initialize scheduler
-	sched := scheduler.New(ctx, logger)
+	sched := scheduler.New(ctx, logger, scheduler.WithLocation(loc))
 
 	// Add jobs to scheduler
 	for i := range cfg.Jobs {

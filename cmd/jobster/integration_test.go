@@ -335,7 +335,7 @@ exit 0
 
 	runner := NewRunner(st, pluginMgr, cfg.Defaults, logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	sched := scheduler.New(ctx, logger)
@@ -350,8 +350,28 @@ exit 0
 		t.Fatalf("Failed to start scheduler: %v", err)
 	}
 
-	time.Sleep(1500 * time.Millisecond)
+	// Poll until the scheduled job (@every 1s) has registered a run, rather than
+	// sleeping a fixed interval. On a loaded CI runner the first tick can be
+	// delayed, so a fixed sleep risks stopping the scheduler before the job fires
+	// at all (recording zero runs). We only check len(runs) here, never a run's
+	// fields: GetJobRuns returns pointers to the live run records the runner
+	// goroutine is still mutating, so reading those fields now would race with it.
+	// Stop() below drains the in-flight run, after which reading its fields is
+	// safe (Stop's wg.Wait establishes the happens-before edge).
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		runs, err := st.GetJobRuns("hook-job", 10)
+		if err != nil {
+			t.Fatalf("Failed to get job runs: %v", err)
+		}
+		if len(runs) > 0 {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 
+	// Stop drains the in-flight run gracefully (it is not cancelled mid-run), so
+	// the recorded run reflects a completed execution rather than a cancelled one.
 	err = sched.Stop()
 	if err != nil {
 		t.Fatalf("Failed to stop scheduler: %v", err)

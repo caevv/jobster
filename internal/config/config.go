@@ -3,7 +3,20 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 )
+
+// LoadLocation resolves a configured timezone name to a *time.Location.
+// An empty name or "Local" returns the server's local time zone; any other
+// value is looked up in the IANA time zone database (e.g. "UTC",
+// "America/New_York"). The embedded tzdata (see cmd/jobster) guarantees the
+// lookup succeeds regardless of the host OS.
+func LoadLocation(name string) (*time.Location, error) {
+	if name == "" || name == "Local" {
+		return time.Local, nil
+	}
+	return time.LoadLocation(name)
+}
 
 // Config represents the top-level configuration structure for Jobster.
 type Config struct {

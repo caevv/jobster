@@ -7,9 +7,22 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+	_ "time/tzdata" // embed the IANA tz database so configured timezones resolve on any host
 
+	"github.com/caevv/jobster/internal/config"
 	"github.com/spf13/cobra"
 )
+
+// resolveLocation resolves the configured timezone into a *time.Location for the
+// scheduler. Shared by the run, serve, and tui commands.
+func resolveLocation(cfg *config.Config) (*time.Location, error) {
+	loc, err := config.LoadLocation(cfg.Defaults.Timezone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load timezone %q: %w", cfg.Defaults.Timezone, err)
+	}
+	return loc, nil
+}
 
 var (
 	// Version information (set via ldflags at build time)

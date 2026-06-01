@@ -129,6 +129,9 @@ func validate(cfg *Config) error {
 	}
 
 	// Validate defaults
+	if _, err := LoadLocation(cfg.Defaults.Timezone); err != nil {
+		return fmt.Errorf("invalid defaults.timezone %q: %w", cfg.Defaults.Timezone, err)
+	}
 	if cfg.Defaults.AgentTimeoutSec < 0 {
 		return fmt.Errorf("defaults.agent_timeout_sec must be non-negative")
 	}

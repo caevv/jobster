@@ -2,11 +2,11 @@
 # This file demonstrates the full configuration schema for Jobster
 
 defaults:
-  timezone: "UTC"
+  timezone: "UTC" # IANA name (e.g. "America/New_York") or "Local"; applies to cron schedules
   agent_timeout_sec: 10
   fail_on_agent_error: false
-  job_retries: 3
-  job_backoff_strategy: "exponential"
+  job_retries: 3 # extra attempts after the first failure (up to 4 total); timeout_sec is per attempt
+  job_backoff_strategy: "exponential" # "linear" (1s,2s,3s...) or "exponential" (1s,2s,4s...), capped at 5m
 
 # Logging configuration (optional)
 logging:

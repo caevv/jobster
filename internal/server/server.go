@@ -158,7 +158,8 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(wrapped, r)
 
 		duration := time.Since(start)
-		s.logger.Info("http request",
+		s.logger.Info(
+			"http request",
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", wrapped.statusCode,

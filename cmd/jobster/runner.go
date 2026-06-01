@@ -110,8 +110,8 @@ func (r *Runner) RunJob(ctx context.Context, job *config.Job) error {
 		}
 	}
 
-	// Execute job command
-	exitCode, stdout, stderr, execErr := r.executeCommand(ctx, job)
+	// Execute job command, retrying on failure per the configured policy.
+	exitCode, stdout, stderr, attempts, execErr := r.executeWithRetries(ctx, job, runID)
 
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
@@ -122,6 +122,11 @@ func (r *Runner) RunJob(ctx context.Context, job *config.Job) error {
 	run.StdoutTail = r.tailOutput(stdout, 10000)
 	run.StderrTail = r.tailOutput(stderr, 10000)
 	run.Metadata["duration"] = duration.String()
+	run.Metadata["attempt"] = attempts
+	run.Metadata["max_attempts"] = r.defaults.JobRetries + 1
+
+	// Reflect the final attempt count in hook environment variables.
+	hookParams.Attempt = attempts
 
 	// Save full logs to history directory
 	r.saveFullLogs(runID, job.ID, stdout, stderr)
@@ -195,6 +200,91 @@ func (r *Runner) RunJob(ctx context.Context, job *config.Job) error {
 	}
 
 	return nil
+}
+
+// Backoff bounds for retries between job attempts.
+const (
+	baseBackoff = 1 * time.Second
+	maxBackoff  = 5 * time.Minute
+)
+
+// executeWithRetries runs the job command, retrying on failure according to the
+// configured retry count (defaults.job_retries) and backoff strategy
+// (defaults.job_backoff_strategy). A job is retried when the command returns a
+// non-zero exit code or fails to start. It returns the result of the final
+// attempt plus the number of attempts actually made (1 means no retry occurred).
+//
+// The per-attempt timeout is enforced by executeCommand, so each retry gets the
+// full job.TimeoutSec budget. If the context is cancelled during a backoff wait
+// (e.g. graceful shutdown), retrying stops and the last failure is returned.
+func (r *Runner) executeWithRetries(ctx context.Context, job *config.Job, runID string) (exitCode int, stdout, stderr string, attempts int, execErr error) {
+	maxAttempts := r.defaults.JobRetries + 1
+	if maxAttempts < 1 {
+		maxAttempts = 1
+	}
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		attempts = attempt
+		exitCode, stdout, stderr, execErr = r.executeCommand(ctx, job)
+
+		// Success: stop retrying.
+		if execErr == nil && exitCode == 0 {
+			return exitCode, stdout, stderr, attempts, execErr
+		}
+
+		// Out of attempts: return the last failure.
+		if attempt >= maxAttempts {
+			return exitCode, stdout, stderr, attempts, execErr
+		}
+
+		delay := backoffDuration(r.defaults.JobBackoffStrategy, attempt)
+		r.logger.Warn("job attempt failed; retrying after backoff",
+			"job_id", job.ID,
+			"run_id", runID,
+			"attempt", attempt,
+			"max_attempts", maxAttempts,
+			"exit_code", exitCode,
+			"backoff", delay.String())
+
+		select {
+		case <-time.After(delay):
+			// proceed to the next attempt
+		case <-ctx.Done():
+			r.logger.Warn("retry backoff aborted by context cancellation",
+				"job_id", job.ID,
+				"run_id", runID,
+				"attempt", attempt)
+			return exitCode, stdout, stderr, attempts, execErr
+		}
+	}
+
+	return exitCode, stdout, stderr, attempts, execErr
+}
+
+// backoffDuration computes the delay before the next retry, given the 1-based
+// number of the attempt that just failed. The "exponential" strategy doubles
+// the base each time (1s, 2s, 4s, ...); any other value (including the default
+// "linear") grows linearly (1s, 2s, 3s, ...). The result is capped at maxBackoff.
+func backoffDuration(strategy string, attempt int) time.Duration {
+	if attempt < 1 {
+		attempt = 1
+	}
+
+	var d time.Duration
+	if strategy == "exponential" {
+		shift := attempt - 1
+		if shift > 16 { // baseBackoff << 16 already far exceeds maxBackoff
+			return maxBackoff
+		}
+		d = baseBackoff << uint(shift)
+	} else {
+		d = baseBackoff * time.Duration(attempt)
+	}
+
+	if d <= 0 || d > maxBackoff {
+		return maxBackoff
+	}
+	return d
 }
 
 // executeCommand runs the job command and captures output
